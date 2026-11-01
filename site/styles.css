@@ -260,17 +260,11 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .hero__title em {
   font-style: normal;
   color: var(--accent);
-  position: relative;
-}
-.hero__title em::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0.08em;
-  height: 0.09em;
-  background: var(--accent-soft);
-  z-index: -1;
+  text-decoration: underline;
+  text-decoration-color: rgba(11, 110, 79, 0.22);
+  text-decoration-thickness: 0.09em;
+  text-underline-offset: 0.14em;
+  text-decoration-skip-ink: none;
 }
 
 .hero__lede {
@@ -487,16 +481,7 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 }
 .tab:hover { color: var(--ink); }
 .tab.is-active { background: var(--accent-soft); color: var(--accent); }
-.tab--dev::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--dark);
-  margin-right: 7px;
-  vertical-align: 1px;
-}
+
 
 .frame {
   margin: 0;
@@ -581,7 +566,7 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .matrix tbody tr:hover { background: rgba(11, 110, 79, 0.035); }
 .matrix tbody tr:hover th { color: var(--accent); }
 .ok { color: var(--accent); font-weight: 700; margin-right: 5px; }
-.dim { color: var(--line-2); }
+.dim { color: var(--faint); }
 
 /* ------------------------------------------------------------------ 04 深色机制段 */
 

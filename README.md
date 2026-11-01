@@ -279,6 +279,16 @@ node scripts/probe.mjs --mode simple --tab yuketang --demo --shot shots/x.png \
 
 环境变量：`COURSEDESK_DEMO=1`、`COURSEDESK_TAB=<tab>`、`COURSEDESK_WINDOW=1440x920`、`COURSEDESK_SHOT=<png>`。
 
+介绍页源码在 [`site/`](site/index.html)，无构建步骤、无外部资源；推 `site/**` 后由
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 部署到 GitHub Pages。想在本地看一眼：
+
+```bash
+node_modules/electron/dist/electron.exe scripts/preview.cjs -- \
+  "$(pwd)/site/index.html" shots/site.png 1440 1000 1500
+```
+
+`scripts/preview.cjs` 会加载任意 URL、打印 console、截图后退出；`PREVIEW_SCROLL=<px>` 可截长页的某一段。
+
 ## 数据与隐私
 
 | 数据 | 位置 | 说明 |
