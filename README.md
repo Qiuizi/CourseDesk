@@ -10,6 +10,8 @@
 <p>
   <a href="https://github.com/Qiuizi/CourseDesk/releases"><img alt="release" src="https://img.shields.io/github/v/release/Qiuizi/CourseDesk?style=flat-square&color=0b6e4f" /></a>
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows%20x64-1f2937?style=flat-square" />
+  <a href="https://github.com/Qiuizi/CourseDesk/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/Qiuizi/CourseDesk?style=flat-square&color=0b6e4f" /></a>
+  <img alt="last commit" src="https://img.shields.io/github/last-commit/Qiuizi/CourseDesk?style=flat-square&color=6b7280" />
   <img alt="electron" src="https://img.shields.io/badge/Electron-45-47848f?style=flat-square&logo=electron&logoColor=white" />
   <img alt="license" src="https://img.shields.io/badge/license-MIT-0b6e4f?style=flat-square" />
   <img alt="tests" src="https://img.shields.io/badge/tests-17%20passing-17a673?style=flat-square" />
@@ -50,6 +52,7 @@
 - [已知限制](#已知限制)
 - [常见问题](#常见问题)
 - [声明](#声明)
+- [English](#english)
 - [License](#license)
 
 ## 为什么做这个
@@ -354,6 +357,21 @@ cookie 在 `%APPDATA%/CourseDesk/Partitions/coursedesk`；设置、事件、缓�
 
 个人本地测试用途：只操作自己账号、只在自己机器上跑、不对外提供服务。
 协议细节来自公开开源项目，随平台更新可能失效；使用前请确认所在学校 / 单位的相关规定。
+
+## English
+
+<sub>CourseDesk is a Windows desktop workbench for two Chinese course platforms — **Rain Classroom (雨课堂)** and
+**XueXiTong / Chaoxing (学习通)**. It puts live classes, in-class quizzes, sign-in activities and homework into one
+window, with two UI modes: a plain light mode for daily use and a developer console that fingerprints each read-only
+endpoint and warns you when a platform changes shape.
+
+Everything runs locally: cookies live in an Electron persist partition, settings and an optional AI key stay in
+`%APPDATA%\CourseDesk`, and no server sits in between. Quizzes can be answered by hand or with an OpenAI-compatible
+model (`off / confirm / auto`), but subjective questions are never auto-submitted. Sign-in support covers normal,
+location, gesture and code-based. QR / photo / face sign-in is handed back to you on purpose.
+
+Downloads are Windows x64 only (portable `.exe` + NSIS installer). Protocol details come from public open-source
+projects; platform changes can break them, so every failure is surfaced in the event log instead of failing silently.</sub>
 
 ## License
 

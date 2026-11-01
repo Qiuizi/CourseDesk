@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://qiuizi.github.io/CourseDesk/sitemap.xml

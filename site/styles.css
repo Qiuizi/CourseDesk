@@ -41,7 +41,11 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* 顶栏是 sticky 的，锚点跳转要留出它的高度 */
+  scroll-padding-top: 76px;
+}
 
 body {
   margin: 0;
@@ -922,7 +926,22 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 @media (max-width: 880px) {
   :root { --pad: 22px; }
-  .nav { display: none; }
+  /* 小屏不藏导航：折到第二行当横向滚动条，别让手机用户只能一路滚到底 */
+  .topbar__inner { flex-wrap: wrap; height: auto; gap: 0 16px; }
+  .brand, .topbar__actions { height: 58px; }
+  .nav {
+    order: 3;
+    flex-basis: 100%;
+    display: flex;
+    gap: 18px;
+    padding: 9px 0 11px;
+    border-top: 1px solid var(--line);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { white-space: nowrap; }
   .hero__grid { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 56px; padding-bottom: 56px; }
   .now { transform: none; max-width: 520px; }
   .hero__title { font-size: clamp(40px, 11vw, 56px); }

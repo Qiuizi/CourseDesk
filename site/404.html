@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>404 · 这一页不在课程表里 · CourseDesk</title>
+    <meta name="theme-color" content="#f6f7f3" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b6e4f'/%3E%3Cpath d='M9 11h14M9 16h9M9 21h11' stroke='%23f6f7f3' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --ink: #141a16;
+        --muted: #55635b;
+        --faint: #6f7d75;
+        --accent: #0b6e4f;
+        --accent-2: #12906a;
+        --line: #e3e7e0;
+        --bg: #f6f7f3;
+        --display: 'Segoe UI Variable Display', 'PingFang SC', 'Microsoft YaHei UI', system-ui, sans-serif;
+        --body: 'Segoe UI Variable Text', 'PingFang SC', 'Microsoft YaHei UI', system-ui, sans-serif;
+        --mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px 22px;
+        color: var(--ink);
+        font-family: var(--body);
+        line-height: 1.6;
+        background:
+          radial-gradient(640px 300px at 12% -6%, rgba(11, 110, 79, 0.07), transparent 70%),
+          radial-gradient(520px 260px at 92% 4%, rgba(13, 109, 140, 0.05), transparent 68%),
+          var(--bg);
+      }
+      .card { width: min(560px, 100%); }
+      .brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
+      .brand__mark {
+        width: 13px; height: 13px; border-radius: 4px;
+        background: linear-gradient(140deg, var(--accent-2), var(--accent));
+        box-shadow: 0 0 0 3px rgba(11, 110, 79, 0.1);
+      }
+      .brand__name { font-family: var(--display); font-weight: 650; font-size: 15px; letter-spacing: -0.015em; }
+      .code {
+        margin: 34px 0 18px;
+        font-family: var(--mono);
+        font-size: clamp(64px, 18vw, 112px);
+        font-weight: 600;
+        line-height: 0.9;
+        letter-spacing: -0.04em;
+        color: var(--accent);
+      }
+      .code small { font-size: 13px; letter-spacing: 0.12em; color: var(--faint); display: block; margin-bottom: 12px; }
+      h1 { font-family: var(--display); font-size: clamp(22px, 4vw, 28px); letter-spacing: -0.02em; margin: 0 0 10px; }
+      p { margin: 0 0 26px; color: var(--muted); font-size: 14.5px; }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        height: 40px; padding: 0 18px; border-radius: 10px;
+        font-size: 13.5px; font-weight: 600; text-decoration: none;
+        border: 1px solid transparent; transition: background 0.16s ease, border-color 0.16s ease;
+      }
+      .btn--solid { background: var(--accent); color: #fff; }
+      .btn--solid:hover { background: #0a6045; }
+      .btn--ghost { border-color: var(--line); color: var(--ink); background: #fff; }
+      .btn--ghost:hover { border-color: #cdd5cb; }
+      .hint { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--faint); }
+      .hint code { font-family: var(--mono); font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <a class="brand" href="/CourseDesk/">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">CourseDesk</span>
+      </a>
+      <div class="code"><small>HTTP 404</small>这一页<br />不在课程表里。</div>
+      <h1>地址可能写错了，或者它已经被移走。</h1>
+      <p>介绍页、下载链接和协议说明都在首页。如果是站内链接带你来的，那它是坏的 —— 可以在仓库里开个 issue。</p>
+      <div class="actions">
+        <a class="btn btn--solid" href="/CourseDesk/">回到介绍页</a>
+        <a class="btn btn--ghost" href="https://github.com/Qiuizi/CourseDesk" rel="noopener">去 GitHub</a>
+      </div>
+      <p class="hint">
+        顺便一提：CourseDesk 的接口变更检测只打只读 GET，<code>sha-1(paths)[0:12]</code> 当结构指纹 —— 和这个 404 一样，
+        都是"先知道，别静默失败"。
+      </p>
+    </main>
+  </body>
+</html>
