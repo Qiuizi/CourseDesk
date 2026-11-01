@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CourseDesk · 雨课堂 × 学习通 双平台课程工作台</title>
+    <meta
+      name="description"
+      content="CourseDesk 把雨课堂和学习通收进一个 Windows 窗口：在课状态、随堂题、签到与作业一屏看完。本地运行，接口结构变了会提醒你。"
+    />
+    <meta name="theme-color" content="#f6f7f3" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="CourseDesk · 两门课，一个窗口" />
+    <meta
+      property="og:description"
+      content="雨课堂 × 学习通的桌面工作台。在课、随堂题、签到、作业，一屏；协议变了自己知道。"
+    />
+    <meta property="og:image" content="./assets/today.jpg" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b6e4f'/%3E%3Cpath d='M9 11h14M9 16h9M9 21h11' stroke='%23f6f7f3' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">跳到正文</a>
+
+    <header class="topbar" id="top">
+      <div class="topbar__inner">
+        <a class="brand" href="#top">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <span class="brand__name">CourseDesk</span>
+          <span class="brand__meta">课程工作台</span>
+        </a>
+        <nav class="nav" aria-label="页面导航">
+          <a href="#why">为什么</a>
+          <a href="#ui">界面</a>
+          <a href="#features">功能</a>
+          <a href="#how">上手</a>
+          <a href="#limits">边界</a>
+        </nav>
+        <div class="topbar__actions">
+          <span class="chip chip--mono" id="ver">v0.1.0</span>
+          <a class="btn btn--ghost btn--sm" href="https://github.com/Qiuizi/CourseDesk" rel="noopener">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.72-.49.06-.48.06-.48.8.06 1.23.83 1.23.83.71 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.94.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"
+              />
+            </svg>
+            GitHub
+          </a>
+          <a class="btn btn--solid btn--sm" href="#download">下载</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ---------------------------------------------------------- HERO -->
+      <section class="hero">
+        <div class="wrap hero__grid">
+          <div class="hero__copy">
+            <p class="eyebrow">
+              <span class="eyebrow__dot" aria-hidden="true"></span>
+              Windows 桌面端 · Electron · 数据只留在本机
+            </p>
+            <h1 class="hero__title">
+              两门课，<br />
+              <em>一个窗口。</em>
+            </h1>
+            <p class="hero__lede">
+              雨课堂 × 学习通。在课状态、随堂题、签到与作业收进一屏；
+              接口结构变了自己会知道，而不是悄悄失败。
+            </p>
+            <div class="hero__actions">
+              <a class="btn btn--solid" href="#download">
+                下载 Windows 版
+                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                  <path d="M8 2v8m0 0 3.2-3.2M8 10 4.8 6.8M3 13h10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </a>
+              <a class="btn btn--ghost" href="https://github.com/Qiuizi/CourseDesk" rel="noopener">读源码</a>
+            </div>
+            <dl class="specs">
+              <div><dt>版本</dt><dd class="mono">0.1.0</dd></div>
+              <div><dt>平台</dt><dd>Windows x64</dd></div>
+              <div><dt>体积</dt><dd class="mono">105 MB</dd></div>
+              <div><dt>许可</dt><dd>MIT</dd></div>
+            </dl>
+          </div>
+
+          <!-- 现在的课堂：把产品最强的画面直接放在首屏 -->
+          <aside class="now" aria-label="界面示例：今天">
+            <div class="now__head">
+              <span class="now__title">今天</span>
+              <span class="now__date mono">11月1日 · 周日</span>
+            </div>
+            <div class="now__rows">
+              <div class="now__row">
+                <span class="dot dot--ok" aria-hidden="true"></span>
+                <div class="now__main">
+                  <p class="now__k">正在上课</p>
+                  <p class="now__s">数据结构与算法 · 周三 3-4 节 · 教三 204</p>
+                </div>
+                <span class="tag tag--solid">进入课堂</span>
+              </div>
+              <div class="now__row">
+                <span class="dot dot--warn" aria-hidden="true"></span>
+                <div class="now__main">
+                  <p class="now__k">待签到</p>
+                  <p class="now__s">大学英语（三） · 第 7 周 课堂签到</p>
+                </div>
+                <span class="tag tag--solid">签到</span>
+              </div>
+              <div class="now__row">
+                <span class="dot" aria-hidden="true"></span>
+                <div class="now__main">
+                  <p class="now__k">作业</p>
+                  <p class="now__s">实验四：平衡二叉树的插入与删除</p>
+                </div>
+                <span class="tag">还剩 2 天</span>
+              </div>
+            </div>
+            <div class="now__foot">
+              <span class="mono">协议</span>
+              <span>3 个只读端点 · 结构一致</span>
+              <span class="now__time mono">20:53</span>
+            </div>
+          </aside>
+        </div>
+        <div class="hero__rule" aria-hidden="true"></div>
+      </section>
+
+      <!-- ---------------------------------------------------------- WHY -->
+      <section class="section" id="why">
+        <div class="wrap">
+          <header class="sec-head">
+            <span class="sec-no mono">01</span>
+            <h2 class="sec-title">两套登录，两个标签页，<br />一天切八十次。</h2>
+            <p class="sec-lede">
+              这不是又一个脚本集合。它把两个平台的状态收在一个窗口里，把"该我动手了"的信号留在最上面。
+            </p>
+          </header>
+
+          <div class="reasons">
+            <article class="reason">
+              <h3>在课一出现，就知道</h3>
+              <p>
+                雨课堂按在课接口轮询（15 秒起），学习通逐课程扫活动。开课、新签到、提交失败都会推一条系统通知 ——
+                不用守着页面刷新。
+              </p>
+              <p class="reason__meta mono">polling · notify · dedupe 60s</p>
+            </article>
+            <article class="reason">
+              <h3>随堂题不靠手速</h3>
+              <p>
+                题干和选项从课件里取，点选或让 AI 给建议，确认后提交。主观题只出解析，永远不自动提交 ——
+                这条是代码级硬规则。
+              </p>
+              <p class="reason__meta mono">presentation/fetch · WS unlockproblem</p>
+            </article>
+            <article class="reason">
+              <h3>平台改版，先知道</h3>
+              <p>
+                只打只读 GET，把响应字段路径做成结构指纹，和基线比。字段增删会变成一条 warn 和一份差异清单，
+                而不是某天打开发现全空。
+              </p>
+              <p class="reason__meta mono">sha-1(paths)[0:12] · baseline diff</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- UI -->
+      <section class="section section--ui" id="ui">
+        <div class="wrap">
+          <header class="sec-head">
+            <span class="sec-no mono">02</span>
+            <h2 class="sec-title">两套界面，同一份快照</h2>
+            <p class="sec-lede">
+              平时用普通模式：浅色、少术语、能点的按钮。排查时切开发者模式：结构指纹、基线差异、主进程日志。
+              切换不打断正在跑的轮询。
+            </p>
+          </header>
+
+          <div class="shots">
+            <div class="shots__tabs" role="tablist" aria-label="界面预览">
+              <button class="tab is-active" role="tab" aria-selected="true" aria-controls="shot-today" data-shot="today">今天</button>
+              <button class="tab" role="tab" aria-selected="false" aria-controls="shot-yuketang" data-shot="yuketang">雨课堂</button>
+              <button class="tab" role="tab" aria-selected="false" aria-controls="shot-chaoxing" data-shot="chaoxing">学习通</button>
+              <button class="tab" role="tab" aria-selected="false" aria-controls="shot-log" data-shot="log">记录</button>
+              <button class="tab" role="tab" aria-selected="false" aria-controls="shot-settings" data-shot="settings">设置</button>
+              <button class="tab tab--dev" role="tab" aria-selected="false" aria-controls="shot-dev" data-shot="dev">开发者模式</button>
+            </div>
+
+            <figure class="frame">
+              <div class="frame__bar">
+                <span class="frame__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="frame__title mono" id="frame-title">CourseDesk — 今天</span>
+                <span class="frame__flag mono">普通</span>
+              </div>
+              <div class="frame__stage">
+                <div class="panel is-active" role="tabpanel" id="shot-today">
+                  <img src="./assets/today.jpg" alt="普通模式「今天」页：在课、待签到、作业与今天的时间线" width="1500" height="959" loading="eager" />
+                </div>
+                <div class="panel" role="tabpanel" id="shot-yuketang" hidden>
+                  <img src="./assets/yuketang.jpg" alt="雨课堂页：在课列表与可点选的课堂题目" width="1500" height="959" loading="lazy" />
+                </div>
+                <div class="panel" role="tabpanel" id="shot-chaoxing" hidden>
+                  <img src="./assets/chaoxing.jpg" alt="学习通页：进行中的签到、签到记录、作业与自动签到开关" width="1500" height="959" loading="lazy" />
+                </div>
+                <div class="panel" role="tabpanel" id="shot-log" hidden>
+                  <img src="./assets/log.jpg" alt="记录页：两个平台的统一时间线，可按平台和级别筛选" width="1500" height="959" loading="lazy" />
+                </div>
+                <div class="panel" role="tabpanel" id="shot-settings" hidden>
+                  <img src="./assets/settings.jpg" alt="设置页：接口变更提醒、轮询节拍与 AI 配置" width="1500" height="959" loading="lazy" />
+                </div>
+                <div class="panel" role="tabpanel" id="shot-dev" hidden>
+                  <img src="./assets/dev.jpg" alt="开发者模式总览：协议结构、轮询统计与健康检查" width="1500" height="959" loading="lazy" />
+                </div>
+              </div>
+            </figure>
+            <p class="shots__caption" id="shot-caption">
+              一屏看完：在课、待签到、作业、时间线与快捷操作。重复的同类事件会折叠成 ×N。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- FEATURES -->
+      <section class="section" id="features">
+        <div class="wrap">
+          <header class="sec-head">
+            <span class="sec-no mono">03</span>
+            <h2 class="sec-title">能力清单</h2>
+            <p class="sec-lede">协议细节来自公开的开源实现（见仓库 docs/协议依据.md）。下面是接进去的部分。</p>
+          </header>
+
+          <div class="tablewrap">
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th scope="col">能力</th>
+                  <th scope="col">雨课堂</th>
+                  <th scope="col">学习通</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">登录</th><td>内嵌浏览器扫码，cookie 落在 persist 分区</td><td>账号密码（AES 加密提交）或网页扫码</td></tr>
+                <tr><th scope="row">课程与在课</th><td><span class="ok">✓</span> courses/list · 在课接口</td><td><span class="ok">✓</span> backclazzdata · activelist</td></tr>
+                <tr><th scope="row">进入课堂 / 签到</th><td><span class="ok">✓</span> checkin，source 指纹可配</td><td><span class="ok">✓</span> 位置 / 手势 / 签到码自动</td></tr>
+                <tr><th scope="row">课堂实时</th><td><span class="ok">✓</span> 自建 WS，解析 11 种 op</td><td><span class="dim">—</span></td></tr>
+                <tr><th scope="row">随堂题</th><td><span class="ok">✓</span> 题干 / 选项 / 点选提交</td><td><span class="dim">—</span></td></tr>
+                <tr><th scope="row">AI 作答</th><td><span class="ok">✓</span> off / confirm / auto，主观题只出解析</td><td><span class="dim">—</span></td></tr>
+                <tr><th scope="row">作业</th><td>exercise list（依赖 leafId）</td><td>work/task-list 解析</td></tr>
+                <tr><th scope="row">视频进度</th><td>按播放器事件形状上报，默认关</td><td><span class="dim">—</span></td></tr>
+                <tr><th scope="row">接口变更检测</th><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+                <tr><th scope="row">两套界面</th><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- MECHANISM -->
+      <section class="dark" id="how-it-works">
+        <div class="wrap">
+          <header class="sec-head sec-head--dark">
+            <span class="sec-no mono">04</span>
+            <h2 class="sec-title">签到不是按钮，<br />是"进入课堂"这个动作。</h2>
+            <p class="sec-lede">
+              网页端没有独立的签到接口。教师开签到后，学生进入课堂即出勤 —— 进入动作本身就是一次 checkin，
+              顺手换回 WS 握手要用的 token。
+            </p>
+          </header>
+
+          <ol class="pipe">
+            <li class="pipe__step">
+              <span class="pipe__no mono">1</span>
+              <h3>轮询在课</h3>
+              <code class="mono">GET /v2/api/web/…/on-lesson</code>
+            </li>
+            <li class="pipe__step">
+              <span class="pipe__no mono">2</span>
+              <h3>进入即签到</h3>
+              <code class="mono">POST /api/v3/lesson/checkin</code>
+            </li>
+            <li class="pipe__step">
+              <span class="pipe__no mono">3</span>
+              <h3>拿 token</h3>
+              <code class="mono">lessonToken · identityId</code>
+            </li>
+            <li class="pipe__step">
+              <span class="pipe__no mono">4</span>
+              <h3>接入课堂</h3>
+              <code class="mono">wss://&lt;host&gt;/wsapp/</code>
+            </li>
+          </ol>
+
+          <div class="dark__note">
+            <p>
+              <strong>题目从哪来：</strong>WS 的 <code class="mono">unlockproblem</code> 只给 problemId 和限时。
+              题干先去已缓存的 slides 里找，找不到就拉一次课件，再不行查 problem/detail。
+            </p>
+            <p>
+              <strong>改版怎么发现：</strong>对 3 个只读端点算字段路径指纹，和上一次基线比；未知 WS op 计数。
+              变化进事件流，也在「设置 → 接口变更提醒」里用人话说明。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- GET STARTED -->
+      <section class="section" id="how">
+        <div class="wrap">
+          <header class="sec-head">
+            <span class="sec-no mono">05</span>
+            <h2 class="sec-title">三步接上</h2>
+            <p class="sec-lede">不需要装 Node 就能用；想改代码再往下看。</p>
+          </header>
+
+          <div class="steps">
+            <article class="step">
+              <span class="step__no mono">1</span>
+              <h3>下载并打开</h3>
+              <p>便携版（免安装）或安装包，Windows x64。首次运行 SmartScreen 会拦一次：更多信息 → 仍要运行。</p>
+            </article>
+            <article class="step">
+              <span class="step__no mono">2</span>
+              <h3>登录两个平台</h3>
+              <p>雨课堂走内嵌浏览器扫码；学习通可用账号密码或网页扫码。登录态存在本机 persist 分区，重启复用。</p>
+            </article>
+            <article class="step">
+              <span class="step__no mono">3</span>
+              <h3>回到「今天」</h3>
+              <p>两个平台都有课程数就算接通。轮询节拍、签到渠道、AI 开关都在设置里，改完立刻生效。</p>
+            </article>
+          </div>
+
+          <div class="code">
+            <div class="code__bar">
+              <span class="mono">从源码跑</span>
+              <button class="copy" type="button" data-copy="#snippet">复制</button>
+            </div>
+            <pre id="snippet"><code><span class="c"># Node ≥ 22 / Electron 45</span>
+git clone https://github.com/Qiuizi/CourseDesk.git
+cd CourseDesk
+npm install
+npm run dev      <span class="c"># 开发模式（HMR）</span>
+npm test         <span class="c"># 协议纯函数 17 项</span>
+npm run pack     <span class="c"># 打包便携版 exe</span></code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- LIMITS -->
+      <section class="section section--limits" id="limits">
+        <div class="wrap">
+          <header class="sec-head">
+            <span class="sec-no mono">06</span>
+            <h2 class="sec-title">它做什么，不做什么</h2>
+            <p class="sec-lede">写下来，省得互相猜。</p>
+          </header>
+
+          <div class="edges">
+            <div class="edge edge--do">
+              <h3>会做</h3>
+              <ul>
+                <li>汇总课程、在课、签到、作业，按平台分别轮询</li>
+                <li>进入课堂（同时记录出勤），接入课堂 WS 收题目</li>
+                <li>白名单内的签到：普通 / 位置 / 手势 / 签到码</li>
+                <li>客观题提交；AI 给建议，可改后提交</li>
+                <li>接口结构变化提醒 + 未识别 WS 消息计数</li>
+              </ul>
+            </div>
+            <div class="edge edge--dont">
+              <h3>不会做</h3>
+              <ul>
+                <li>上传账号、密码、cookie 到任何服务器</li>
+                <li>主观题代写代交（只出解析文本）</li>
+                <li>自动处理二维码 / 拍照 / 人脸签到</li>
+                <li>绕过平台风控、伪造定位到生产会话</li>
+                <li>替你做"必须本人到场"的事</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="notes">
+            <h3>已知限制</h3>
+            <ul>
+              <li>雨课堂作业依赖课程 leafId，部分学校接口不返回 → 作业区为空是预期行为。</li>
+              <li>各校部署的字段有差异，代码做了多字段兜底；仍失败时题干显示"未取到"，WS 事件不丢。</li>
+              <li>判断题部分部署不下发选项，普通模式补 A 正确 / B 错误 兜底。</li>
+              <li>平台改版会打破协议；所有失败进事件流，不静默。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- FAQ + DOWNLOAD -->
+      <section class="section" id="faq">
+        <div class="wrap faq">
+          <header class="sec-head">
+            <span class="sec-no mono">07</span>
+            <h2 class="sec-title">常见问题</h2>
+          </header>
+
+          <div class="qa">
+            <details>
+              <summary>登录态和数据存在哪？</summary>
+              <p>
+                cookie 在 <code class="mono">%APPDATA%/CourseDesk/Partitions/coursedesk</code>；设置、事件、缓存与
+                AI Key 在 <code class="mono">%APPDATA%/CourseDesk/state.json</code>（Key 用 Windows DPAPI 加密）。
+                日志按天写到 <code class="mono">logs/coursedesk-YYYYMMDD.jsonl</code>。
+              </p>
+            </details>
+            <details>
+              <summary>作业列表是空的？</summary>
+              <p>雨课堂作业需要课程的 leafId，部分学校不下发。这不影响课堂、签到与题目。</p>
+            </details>
+            <details>
+              <summary>AI 会自己提交答案吗？</summary>
+              <p>
+                看设置：「自己答」不调用模型；「我确认后提交」只把建议填进题目卡；「自动提交」仅对客观题生效。
+                主观题在任何档位都只生成解析。
+              </p>
+            </details>
+            <details>
+              <summary>二维码 / 人脸签到怎么办？</summary>
+              <p>转人工：应用会提醒你去官方页面处理，不尝试识别或伪造。</p>
+            </details>
+            <details>
+              <summary>学校用的是自建域名？</summary>
+              <p>设置 → 雨课堂 → 学校域名，填 <code class="mono">pro.yuketang.cn</code> 或学校子域即可。</p>
+            </details>
+          </div>
+
+          <div class="download" id="download">
+            <div class="download__copy">
+              <h3>拿走它</h3>
+              <p>Windows x64。便携版不写注册表，拷走 exe 就能换机器；安装包会建快捷方式。</p>
+            </div>
+            <div class="download__actions">
+              <a class="btn btn--solid" href="https://github.com/Qiuizi/CourseDesk/releases/latest/download/CourseDesk-0.1.0-portable.exe">
+                便携版 <span class="mono btn__meta">105 MB</span>
+              </a>
+              <a class="btn btn--ghost" href="https://github.com/Qiuizi/CourseDesk/releases/latest/download/CourseDesk-0.1.0-setup.exe">
+                安装包 <span class="mono btn__meta">116 MB</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <div class="footer__brand">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <span>CourseDesk</span>
+          <span class="mono footer__ver">v0.1.0</span>
+        </div>
+        <p class="footer__note">
+          个人本地测试用途：只操作自己的账号、只在自己机器上跑、不对外提供服务。协议细节来自公开开源项目，
+          随平台更新可能失效；使用前请确认所在学校 / 单位的相关规定。
+        </p>
+        <nav class="footer__links" aria-label="相关链接">
+          <a href="https://github.com/Qiuizi/CourseDesk" rel="noopener">GitHub</a>
+          <a href="https://github.com/Qiuizi/CourseDesk/blob/main/docs/%E5%8D%8F%E8%AE%AE%E4%BE%9D%E6%8D%AE.md" rel="noopener">协议依据</a>
+          <a href="https://github.com/Qiuizi/CourseDesk/blob/main/LICENSE" rel="noopener">MIT License</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

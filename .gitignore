@@ -1,0 +1,11 @@
+node_modules/
+out/
+dist/
+shots/
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+
+# build output
+release/

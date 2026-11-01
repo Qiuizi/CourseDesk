@@ -1,0 +1,81 @@
+{
+  "name": "coursedesk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CourseDesk — 雨课堂 × 学习通 双平台本地课程工作台（自用测试）",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "node --test tests/",
+    "shot": "node scripts/shoot.mjs",
+    "probe": "node scripts/probe.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "pack": "electron-vite build && electron-builder --win portable",
+    "pack:dir": "electron-vite build && electron-builder --win --dir",
+    "pack:nsis": "electron-vite build && electron-builder --win nsis"
+  },
+  "dependencies": {
+    "ws": "^8.22.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.4",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^5.1.2",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "build": {
+    "appId": "com.coursedesk.app",
+    "productName": "CourseDesk",
+    "copyright": "Personal test build",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "resources"
+      }
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.ico"
+    },
+    "portable": {
+      "artifactName": "CourseDesk-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CourseDesk",
+      "artifactName": "CourseDesk-${version}-setup.exe"
+    }
+  }
+}
