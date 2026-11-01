@@ -282,8 +282,9 @@ node scripts/probe.mjs --mode simple --tab yuketang --demo --shot shots/x.png \
 
 环境变量：`COURSEDESK_DEMO=1`、`COURSEDESK_TAB=<tab>`、`COURSEDESK_WINDOW=1440x920`、`COURSEDESK_SHOT=<png>`。
 
-介绍页源码在 [`site/`](site/index.html)，无构建步骤、无外部资源；推 `site/**` 后由
-[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 部署到 GitHub Pages。想在本地看一眼：
+介绍页源码在 [`site/`](site/index.html)，无构建步骤、无外部资源：滚动时每个 section（连同首屏、页脚）
+按离视口的距离整页渐隐，截图切换也是淡出→换页→淡入，`prefers-reduced-motion` 下只保留透明度、不做位移。
+推 `site/**` 后由 [`.github/workflows/pages.yml`](.github/workflows/pages.yml) 部署到 GitHub Pages。想在本地看一眼：
 
 ```bash
 node_modules/electron/dist/electron.exe scripts/preview.cjs -- \

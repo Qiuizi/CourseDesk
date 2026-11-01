@@ -516,9 +516,19 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   border-radius: 4px;
   padding: 1px 6px;
 }
-.frame__stage { position: relative; background: var(--paper-2); }
+.frame__stage {
+  position: relative;
+  background: var(--paper-2);
+  /* 切页也走淡出→淡入，和滚动的那套节奏一致 */
+  transition: opacity 0.18s ease;
+}
+.frame__stage.is-swapping { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .frame__stage { transition: opacity 0.18s ease, transform 0.18s ease; }
+  .frame__stage.is-swapping { transform: translateY(6px); }
+}
 .panel { display: none; }
-.panel.is-active { display: block; animation: fade 0.32s ease both; }
+.panel.is-active { display: block; }
 .panel img { width: 100%; }
 
 .shots__caption {
@@ -909,11 +919,17 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   to { opacity: 1; transform: none; }
 }
 
-.reveal { opacity: 0; transform: translateY(14px); }
-.reveal.is-in {
-  opacity: 1;
-  transform: none;
-  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 0.8, 0.28, 1);
+/* 渐进消失：app.js 每次滚动只写一个 --p（0–1）。透明度始终生效，
+   位移只在系统允许动效时叠加——关掉动画的用户也能看到"渐隐"，但不会被推着走。 */
+[data-fading] {
+  opacity: var(--p, 1);
+}
+[data-fading][data-faded] { pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-fading] {
+    transform: translate3d(0, calc((1 - var(--p, 1)) * 14px), 0);
+    will-change: opacity, transform;
+  }
 }
 
 /* ------------------------------------------------------------------ 响应式 */
@@ -966,6 +982,10 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .download__actions .btn { flex: 1 1 auto; }
 }
 
+@media print {
+  [data-fading] { opacity: 1 !important; transform: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
@@ -973,5 +993,7 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
     animation-delay: 0s !important;
     transition-duration: 0.001ms !important;
   }
+  /* 淡入淡出不是「位移」，留着；被禁掉的是所有会动的东西 */
+  .frame__stage { transition-duration: 0.18s !important; }
   .reveal { opacity: 1; transform: none; }
 }

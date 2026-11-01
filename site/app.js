@@ -43,7 +43,10 @@
   const captionEl = document.getElementById('shot-caption');
   const flagEl = document.querySelector('.frame__flag');
 
-  function select(id, focus) {
+  const stage = document.querySelector('.frame__stage');
+  let swapTimer = 0;
+
+  function apply(id, focus) {
     const meta = SHOTS[id];
     if (!meta) return;
     tabs.forEach((tab) => {
@@ -64,6 +67,22 @@
     if (flagEl) flagEl.textContent = meta.flag;
   }
 
+  /* 切页：先让截图淡出，换页后再淡入；减少动效时直接切换 */
+  function select(id, focus) {
+    const active = tabs.find((tab) => tab.classList.contains('is-active'));
+    if (!SHOTS[id] || (active && active.dataset.shot === id)) return;
+    if (!stage) {
+      apply(id, focus);
+      return;
+    }
+    clearTimeout(swapTimer);
+    stage.classList.add('is-swapping');
+    swapTimer = window.setTimeout(() => {
+      apply(id, focus);
+      requestAnimationFrame(() => stage.classList.remove('is-swapping'));
+    }, 160);
+  }
+
   tabs.forEach((tab) => tab.addEventListener('click', () => select(tab.dataset.shot)));
 
   const list = document.querySelector('.shots__tabs');
@@ -79,41 +98,47 @@
     });
   }
 
-  /* 滚动入场 */
-  const revealTargets = [
-    '.sec-head',
-    '.reasons',
-    '.shots',
-    '.tablewrap',
-    '.pipe',
-    '.dark__note',
-    '.steps',
-    '.code',
-    '.edges',
-    '.notes',
-    '.qa',
-    '.download',
-  ];
-  const targets = revealTargets.flatMap((sel) => Array.from(document.querySelectorAll(sel)));
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* 渐进消失：以「页」为单位，滚动时按离视口的距离整页渐隐（只写一个 --p） */
+  const fadeTargets = Array.from(
+    document.querySelectorAll('main .hero > .wrap, main .section > .wrap, main .dark > .wrap, footer > .wrap'),
+  );
 
-  if (!reduce && 'IntersectionObserver' in window) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-in');
-          io.unobserve(entry.target);
-        });
-      },
-      { rootMargin: '0px 0px -12% 0px', threshold: 0.08 },
-    );
-    targets.forEach((el, i) => {
-      el.classList.add('reveal');
-      el.style.transitionDelay = `${Math.min(i % 4, 3) * 40}ms`;
-      io.observe(el);
-    });
+  function initFade() {
+    const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
+    const smooth = (n) => n * n * (3 - 2 * n);
+    let frame = 0;
+
+    fadeTargets.forEach((el) => el.setAttribute('data-fading', ''));
+
+    const paint = () => {
+      frame = 0;
+      const vh = window.innerHeight || 1;
+      // 进入 / 离开各留 30% 视口做过渡，整页一起渐隐，而不是各块错位
+      const inBand = vh * 0.3;
+      const outBand = vh * 0.32;
+      // 滚到底以后，最后的内容没机会再往上走，别让它永远停在半透明
+      const atBottom = window.scrollY + vh >= document.documentElement.scrollHeight - 2;
+      for (const el of fadeTargets) {
+        const r = el.getBoundingClientRect();
+        const enter = atBottom && r.bottom <= vh ? 1 : clamp01((vh - r.top) / inBand);
+        const leave = clamp01(r.bottom / outBand);
+        const p = smooth(Math.min(enter, leave));
+        el.style.setProperty('--p', p.toFixed(3));
+        el.toggleAttribute('data-faded', p < 0.02);
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
+    window.addEventListener('load', schedule, { once: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+    paint();
   }
+
+  initFade();
 
   /* 复制命令 */
   document.querySelectorAll('.copy[data-copy]').forEach((btn) => {
