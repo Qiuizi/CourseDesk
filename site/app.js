@@ -113,16 +113,17 @@
     const paint = () => {
       frame = 0;
       const vh = window.innerHeight || 1;
-      // 进入 / 离开各留 30% 视口做过渡，整页一起渐隐，而不是各块错位
-      const inBand = vh * 0.3;
-      const outBand = vh * 0.32;
       // 滚到底以后，最后的内容没机会再往上走，别让它永远停在半透明
       const atBottom = window.scrollY + vh >= document.documentElement.scrollHeight - 2;
       for (const el of fadeTargets) {
         const r = el.getBoundingClientRect();
-        const enter = atBottom && r.bottom <= vh ? 1 : clamp01((vh - r.top) / inBand);
-        const leave = clamp01(r.bottom / outBand);
-        const p = smooth(Math.min(enter, leave));
+        // 淡出：这一页被滚过自身高度的 35% 之后开始消失，滚满一屏高度时归零
+        const span = Math.max(1, Math.min(r.height, vh));
+        const passed = clamp01(-r.top / span);
+        const out = 1 - smooth(clamp01((passed - 0.35) / 0.65));
+        // 淡入：从视口底部露出一屏的 35% 距离里逐渐显形
+        const enter = atBottom && r.bottom <= vh ? 1 : clamp01((vh - r.top) / (vh * 0.35));
+        const p = Math.min(out, enter);
         el.style.setProperty('--p', p.toFixed(3));
         el.toggleAttribute('data-faded', p < 0.02);
       }
