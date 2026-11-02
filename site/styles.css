@@ -927,7 +927,9 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 [data-fading][data-faded] { pointer-events: none; }
 @media (prefers-reduced-motion: no-preference) {
   [data-fading] {
-    transform: translate3d(0, calc((1 - var(--p, 1)) * 14px), 0);
+    /* 淡出的同时轻微下沉 + 回缩，像一层纸被推远；数值很小，避免文字发虚 */
+    transform: translate3d(0, calc((1 - var(--p, 1)) * 18px), 0) scale(calc(0.972 + 0.028 * var(--p, 1)));
+    transform-origin: 50% 40%;
     will-change: opacity, transform;
   }
 }
