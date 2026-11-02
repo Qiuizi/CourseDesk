@@ -196,7 +196,8 @@
     /* 键盘 */
     window.addEventListener('keydown', (e) => {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.target.closest('input, textarea, select, summary, button, a')) return;
+      const el = e.target instanceof Element ? e.target : null;
+      if (el && el.closest('input, textarea, select, summary, button, a')) return;
       const down = e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Spacebar';
       const up = e.key === 'ArrowUp' || e.key === 'PageUp';
       const home = e.key === 'Home';
