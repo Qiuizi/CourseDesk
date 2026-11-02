@@ -937,28 +937,40 @@ body { overflow: hidden; }
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
-  padding: 16px 0 26px;
+  align-items: stretch;
+  padding: 12px 0 22px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transform: translate3d(0, 12px, 0);
+  transition: opacity 0.48s cubic-bezier(0.4, 0, 0.2, 1), transform 0.52s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 .deck .slide.is-active {
   opacity: 1;
+  transform: none;
   pointer-events: auto;
+}
+.deck .slide.is-leaving {
+  opacity: 0;
+  transform: translate3d(0, -10px, 0);
 }
 
 /* 内容高的页在页内滚动，滚到底再翻页 */
 .deck .slide > .wrap {
   width: 100%;
+  height: 100%;
   max-height: 100%;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-top: 6px;
-  padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  overflow: hidden;
+  padding-top: 4px;
+  padding-bottom: 4px;
   scrollbar-width: thin;
   scrollbar-color: #d6dcd4 transparent;
 }
+.deck .slide > .wrap > * { flex: 0 0 auto; }
 .deck .slide > .wrap::-webkit-scrollbar { width: 6px; }
 .deck .slide > .wrap::-webkit-scrollbar-thumb { background: #d6dcd4; border-radius: 3px; }
 
@@ -967,11 +979,19 @@ body { overflow: hidden; }
 .deck .dark,
 .deck .hero,
 .deck .footer { padding: 0; border-top: 0; }
-.deck .hero__grid { padding-top: 4px; padding-bottom: 4px; }
-.deck .sec-head { margin-bottom: 30px; }
-.deck .pipe { margin-bottom: 24px; }
+.deck .slide > .wrap.hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  align-items: center;
+  gap: 36px;
+  height: 100%;
+  padding: 0;
+}
+.deck .hero__rule { display: none; }
+.deck .sec-head { margin-bottom: 0; }
+.deck .pipe { margin-bottom: 0; }
 .deck .footer { background: transparent; }
-.deck .end { display: flex; flex-direction: column; gap: 26px; }
+.deck .end { display: flex; flex-direction: column; justify-content: center; gap: 26px; height: 100%; }
 .deck .end .download { margin: 0; }
 .deck .end .footer__inner { padding-top: 20px; border-top: 1px solid var(--line); }
 .deck .end .download__actions { margin-top: 0; }
@@ -1076,7 +1096,8 @@ body { overflow: hidden; }
   }
   .nav::-webkit-scrollbar { display: none; }
   .nav a { white-space: nowrap; }
-  .hero__grid { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 56px; padding-bottom: 56px; }
+  .hero__grid,
+  .deck .slide > .wrap.hero__grid { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-top: 0; padding-bottom: 0; }
   .now { transform: none; max-width: 520px; }
   .hero__title { font-size: clamp(40px, 11vw, 56px); }
   .section, .dark { padding: 64px 0; }
@@ -1109,8 +1130,41 @@ body { overflow: hidden; }
   }
   /* 淡入淡出不是「位移」，留着；被禁掉的是所有会动的东西 */
   .frame__stage,
-  .deck .slide { transition-duration: 0.3s !important; }
+  .deck .slide { transition-duration: 0.48s !important; }
+  .deck .slide { transform: none !important; }
   .reveal { opacity: 1; transform: none; }
+}
+
+/* 矮屏：把纵向节奏压紧，保证一屏装下 */
+@media (max-height: 820px) {
+  .deck .slide { padding: 6px 0 16px; }
+  .deck .slide > .wrap { gap: 20px; }
+  .deck .sec-title { font-size: clamp(30px, 3.4vw, 40px); }
+  .deck .sec-lede { font-size: 14px; line-height: 1.7; }
+  .deck .sec-no { font-size: 11px; }
+  .deck .hero__title { font-size: clamp(36px, 4.2vw, 52px); margin-bottom: 14px; }
+  .deck .hero__lede { font-size: 14.5px; margin-bottom: 20px; }
+  .deck .hero__actions { margin-bottom: 20px; }
+  .deck .eyebrow { margin-bottom: 14px; font-size: 12.5px; }
+  .deck .slide > .wrap.hero__grid { gap: 30px; }
+  .deck .now__head { padding: 12px 18px 10px; }
+  .deck .now__row { padding: 10px 0; }
+  .deck .now__foot { padding: 10px 18px; }
+  .deck .frame__stage img { max-height: 44vh; }
+  .deck .matrix { font-size: 13px; }
+  .deck .matrix th, .deck .matrix td { padding: 8px 0; }
+  .deck .matrix thead th { padding-bottom: 8px; }
+  .deck .code pre { max-height: 26vh; font-size: 12px; line-height: 1.6; }
+  .deck .code__bar { padding: 8px 14px; }
+  .deck .reason, .deck .step { padding-top: 16px; padding-bottom: 16px; }
+  .deck .qa summary { padding: 12px 0; }
+  .deck .download { padding: 20px 22px; }
+}
+@media (max-height: 700px) {
+  .deck .frame__stage img { max-height: 40vh; }
+  .deck .matrix { font-size: 12.5px; }
+  .deck .matrix th, .deck .matrix td { padding: 6px 0; }
+  .deck .hero__title { font-size: clamp(34px, 4vw, 50px); }
 }
 
 /* 小屏：章节点移到底部，横排 */
@@ -1132,6 +1186,6 @@ body { overflow: hidden; }
   /* 手机上首屏只留文案，配图卡片会撑破一屏 */
   .deck .now { display: none; }
   .deck .hero__title { font-size: clamp(34px, 10.5vw, 52px); }
-  .deck .slide > .wrap { padding-bottom: 40px; }
+  .deck .slide > .wrap { padding-bottom: 40px; overflow-y: auto; overscroll-behavior: contain; }
   .deck .matrix { min-width: 520px; font-size: 13.5px; }
 }

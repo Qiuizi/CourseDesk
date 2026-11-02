@@ -152,15 +152,18 @@
       if (next === current || busy) return;
       const from = slides[current];
       busy = true;
-      from.classList.remove('is-active'); // 先淡出
+      // 旧页先走，180ms 后新页跟着进——两段淡出淡入叠一点，中间不留空帧
+      from.classList.add('is-leaving');
+      from.classList.remove('is-active');
       window.setTimeout(() => {
         current = next;
-        render(next); // 再淡入
+        render(next);
         innerOf(next)?.scrollTo(0, 0);
-        window.setTimeout(() => {
-          busy = false;
-        }, 320);
-      }, 300);
+      }, 200);
+      window.setTimeout(() => {
+        from.classList.remove('is-leaving');
+        busy = false;
+      }, 760);
     }
 
     /* 初始页：看 hash 指向哪一页 */
@@ -187,7 +190,7 @@
         e.preventDefault();
         const now = Date.now();
         if (now < lock || Math.abs(e.deltaY) < 8) return;
-        lock = now + 700;
+        lock = now + 780;
         go(current + (e.deltaY > 0 ? 1 : -1));
       },
       { passive: false },
@@ -225,7 +228,15 @@
       (e) => {
         const dy = e.changedTouches[0].clientY - touchY;
         const dx = e.changedTouches[0].clientX - touchX;
-        if (Math.abs(dy) > 56 && Math.abs(dy) > Math.abs(dx)) go(current + (dy < 0 ? 1 : -1));
+        if (Math.abs(dy) <= 56 || Math.abs(dy) <= Math.abs(dx)) return;
+        // 页内还能滚就交给页内滚动，滚到边界才翻页
+        const inner = innerOf(current);
+        if (inner && inner.scrollHeight > inner.clientHeight + 2) {
+          const atTop = inner.scrollTop <= 0;
+          const atEnd = inner.scrollTop + inner.clientHeight >= inner.scrollHeight - 2;
+          if ((dy < 0 && !atEnd) || (dy > 0 && !atTop)) return;
+        }
+        go(current + (dy < 0 ? 1 : -1));
       },
       { passive: true },
     );

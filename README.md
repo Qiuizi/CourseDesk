@@ -283,7 +283,7 @@ node scripts/probe.mjs --mode simple --tab yuketang --demo --shot shots/x.png \
 环境变量：`COURSEDESK_DEMO=1`、`COURSEDESK_TAB=<tab>`、`COURSEDESK_WINDOW=1440x920`、`COURSEDESK_SHOT=<png>`。
 
 介绍页源码在 [`site/`](site/index.html)，无构建步骤、无外部资源：整站是 9 屏的演示，滚轮 / ↑↓ / 触屏上下滑一次翻一页——
-旧页先淡出、新页再淡入（PPT 式，不会两页同时占屏）；内容高的页先在页内滚动，滚到边界才翻页；
+旧页先淡出、新页 200ms 后跟进淡入（PPT 式，只有交接的 100ms 会重叠）；每屏按视口高度重排过，1440×900 / 1366×768 / 1280×720 都一屏装下，更矮或更窄时才在页内滚动；
 右侧章节点可直接跳转，`#why` 这类锚点也走同一套。截图切换同样是淡出→换页→淡入。
 `prefers-reduced-motion` 下保留透明度过渡，去掉位移与缩放。
 推 `site/**` 后由 [`.github/workflows/pages.yml`](.github/workflows/pages.yml) 部署到 GitHub Pages。想在本地看一眼：
