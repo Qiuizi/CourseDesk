@@ -925,6 +925,10 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   opacity: var(--p, 1);
 }
 [data-fading][data-faded] { pointer-events: none; }
+/* 消失中的页轻微失焦：像镜头拉开，不是简单调透明度 */
+[data-fading][data-blur] {
+  filter: blur(calc((1 - var(--p, 1)) * 3px));
+}
 @media (prefers-reduced-motion: no-preference) {
   [data-fading] {
     /* 淡出的同时轻微下沉 + 回缩，像一层纸被推远；数值很小，避免文字发虚 */

@@ -113,7 +113,7 @@
     // 滚过自身高度 15% 后开始淡出，滚到完全离开时正好归零
     const span = Math.max(1, Math.min(r.height, vh));
     const passed = clamp01(-r.top / span);
-    const out = 1 - smooth(clamp01((passed - 0.15) / 1.1));
+    const out = 1 - smooth(clamp01((passed - 0.1) / 1.0));
     return smooth(Math.min(enter, out));
   }
 
@@ -148,8 +148,11 @@
       inited = true;
 
       state.forEach((item, i) => {
-        item.el.style.setProperty('--p', values[i].toFixed(3));
-        item.el.toggleAttribute('data-faded', values[i] < 0.02);
+        const p = values[i];
+        item.el.style.setProperty('--p', p.toFixed(3));
+        item.el.toggleAttribute('data-faded', p < 0.02);
+        // 只给正在消失的页加模糊，静止的页不创建滤镜层
+        item.el.toggleAttribute('data-blur', p < 0.985 && p > 0.02);
       });
 
       if (moving) raf = requestAnimationFrame(tick);
