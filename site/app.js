@@ -1,7 +1,8 @@
-/* CourseDesk 介绍页：标签切换、入场动效、复制命令。没有依赖。 */
+/* CourseDesk 介绍页：一屏一页的幻灯片分页（淡出→淡入）、界面截图切换、复制命令。没有依赖。 */
 (() => {
   'use strict';
 
+  /* ---------------------------------------------------------------- 截图页 */
   const SHOTS = {
     today: {
       title: 'CourseDesk — 今天',
@@ -42,7 +43,6 @@
   const titleEl = document.getElementById('frame-title');
   const captionEl = document.getElementById('shot-caption');
   const flagEl = document.querySelector('.frame__flag');
-
   const stage = document.querySelector('.frame__stage');
   let swapTimer = 0;
 
@@ -67,7 +67,7 @@
     if (flagEl) flagEl.textContent = meta.flag;
   }
 
-  /* 切页：先让截图淡出，换页后再淡入；减少动效时直接切换 */
+  /* 切图：截图先淡出，换页后再淡入 */
   function select(id, focus) {
     const active = tabs.find((tab) => tab.classList.contains('is-active'));
     if (!SHOTS[id] || (active && active.dataset.shot === id)) return;
@@ -98,78 +98,156 @@
     });
   }
 
-  /* 滚动淡出：每一页都随滚动「溶解」——目标值由位置算出，
-     显示值用阻尼跟随（lerp），所以滚轮跳一格、拖滚动条、锚点跳转都是滑过去的，不会瞬切。 */
-  const fadeTargets = Array.from(
-    document.querySelectorAll('main .hero > .wrap, main .section > .wrap, main .dark > .wrap, footer > .wrap'),
-  );
+  /* ---------------------------------------------------------------- 分页 */
+  const deck = document.getElementById('main');
+  const slides = deck ? Array.from(deck.querySelectorAll('.slide')) : [];
+  const dots = document.querySelector('.deck-dots');
+  let current = 0;
+  let busy = false;
+  let dotEls = [];
 
-  const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
-  const smooth = (n) => n * n * (3 - 2 * n);
+  if (slides.length) {
+    /* 顶栏高度 → deck 的起点（小屏时顶栏会折成两行） */
+    const syncBar = () => {
+      const bar = document.querySelector('.topbar');
+      if (bar) document.documentElement.style.setProperty('--bar', `${bar.offsetHeight}px`);
+    };
+    syncBar();
+    window.addEventListener('resize', syncBar);
 
-  function targetFor(r, vh, atBottom) {
-    // 从底部升起：占视口 45% 的行程里淡入
-    const enter = atBottom && r.bottom <= vh ? 1 : clamp01((vh - r.top) / (vh * 0.45));
-    // 滚过自身高度 15% 后开始淡出，滚到完全离开时正好归零
-    const span = Math.max(1, Math.min(r.height, vh));
-    const passed = clamp01(-r.top / span);
-    const out = 1 - smooth(clamp01((passed - 0.1) / 1.0));
-    return smooth(Math.min(enter, out));
-  }
+    if (dots) {
+      dotEls = slides.map((slide, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('aria-label', slide.dataset.label || slide.id || `第 ${i + 1} 页`);
+        const tip = document.createElement('span');
+        tip.textContent = slide.dataset.label || String(i + 1).padStart(2, '0');
+        b.appendChild(tip);
+        b.addEventListener('click', () => go(i));
+        dots.appendChild(b);
+        return b;
+      });
+    }
 
-  if (fadeTargets.length) {
-    const state = fadeTargets.map((el) => {
-      el.setAttribute('data-fading', '');
-      return { el, v: 1 };
-    });
-    let raf = 0;
-    let inited = false;
+    const innerOf = (i) => slides[i].querySelector(':scope > .wrap');
 
-    const tick = () => {
-      raf = 0;
-      const vh = window.innerHeight || 1;
-      const atBottom = window.scrollY + vh >= document.documentElement.scrollHeight - 2;
-      let moving = false;
+    function render(i) {
+      slides.forEach((slide, idx) => {
+        const on = idx === i;
+        slide.classList.toggle('is-active', on);
+        slide.setAttribute('aria-hidden', on ? 'false' : 'true');
+        if ('inert' in slide) slide.inert = !on;
+      });
+      dotEls.forEach((d, idx) => d.classList.toggle('is-active', idx === i));
+      deck.classList.toggle('is-cover', i === 0);
+      document.querySelectorAll('.nav a').forEach((a) => {
+        const target = document.getElementById(a.getAttribute('href').slice(1));
+        a.classList.toggle('is-active', Boolean(target) && target.closest('.slide') === slides[i]);
+      });
+      if (history.replaceState) history.replaceState(null, '', i === 0 ? location.pathname : `#${slides[i].id}`);
+    }
 
-      // 先读后写：一次 rAF 内只做一轮布局读取
-      const values = state.map((item) => {
-        const target = targetFor(item.el.getBoundingClientRect(), vh, atBottom);
-        if (!inited) {
-          item.v = target;
-          return target;
+    function go(i) {
+      const next = Math.max(0, Math.min(slides.length - 1, i));
+      if (next === current || busy) return;
+      const from = slides[current];
+      busy = true;
+      from.classList.remove('is-active'); // 先淡出
+      window.setTimeout(() => {
+        current = next;
+        render(next); // 再淡入
+        innerOf(next)?.scrollTo(0, 0);
+        window.setTimeout(() => {
+          busy = false;
+        }, 320);
+      }, 300);
+    }
+
+    /* 初始页：看 hash 指向哪一页 */
+    const fromHash = location.hash.replace('#', '');
+    const index = slides.findIndex((s) => s.id === fromHash || Boolean(fromHash && s.contains(document.getElementById(fromHash))));
+    current = index > 0 ? index : 0;
+    render(current);
+
+    /* 滚轮：先让页内滚动，到边界再翻页 */
+    let lock = 0;
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (busy) {
+          e.preventDefault();
+          return;
         }
-        // 阻尼一直开：透明度不是位移，系统关掉动画时也应该滑过去
-        const k = 0.18;
-        item.v += (target - item.v) * k;
-        if (Math.abs(target - item.v) < 0.0015) item.v = target;
-        else moving = true;
-        return item.v;
-      });
-      inited = true;
+        const inner = innerOf(current);
+        if (inner && inner.scrollHeight > inner.clientHeight + 2) {
+          const atTop = inner.scrollTop <= 0;
+          const atEnd = inner.scrollTop + inner.clientHeight >= inner.scrollHeight - 2;
+          if ((e.deltaY > 0 && !atEnd) || (e.deltaY < 0 && !atTop)) return; // 交给页内滚动
+        }
+        e.preventDefault();
+        const now = Date.now();
+        if (now < lock || Math.abs(e.deltaY) < 8) return;
+        lock = now + 700;
+        go(current + (e.deltaY > 0 ? 1 : -1));
+      },
+      { passive: false },
+    );
 
-      state.forEach((item, i) => {
-        const p = values[i];
-        item.el.style.setProperty('--p', p.toFixed(3));
-        item.el.toggleAttribute('data-faded', p < 0.02);
-        // 只给正在消失的页加模糊，静止的页不创建滤镜层
-        item.el.toggleAttribute('data-blur', p < 0.985 && p > 0.02);
-      });
+    /* 键盘 */
+    window.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target.closest('input, textarea, select, summary, button, a')) return;
+      const down = e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Spacebar';
+      const up = e.key === 'ArrowUp' || e.key === 'PageUp';
+      const home = e.key === 'Home';
+      const end = e.key === 'End';
+      if (!down && !up && !home && !end) return;
+      e.preventDefault();
+      if (home) go(0);
+      else if (end) go(slides.length - 1);
+      else go(current + (down ? 1 : -1));
+    });
 
-      if (moving) raf = requestAnimationFrame(tick);
-    };
+    /* 触屏上下滑 */
+    let touchY = 0;
+    let touchX = 0;
+    window.addEventListener(
+      'touchstart',
+      (e) => {
+        touchY = e.touches[0].clientY;
+        touchX = e.touches[0].clientX;
+      },
+      { passive: true },
+    );
+    window.addEventListener(
+      'touchend',
+      (e) => {
+        const dy = e.changedTouches[0].clientY - touchY;
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dy) > 56 && Math.abs(dy) > Math.abs(dx)) go(current + (dy < 0 ? 1 : -1));
+      },
+      { passive: true },
+    );
 
-    const kick = () => {
-      if (!raf) raf = requestAnimationFrame(tick);
-    };
+    /* 站内锚点都变成翻页 */
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href^="#"]');
+      if (!a) return;
+      const target = document.getElementById(a.getAttribute('href').slice(1));
+      const slide = target && target.closest('.slide');
+      if (!slide) return;
+      e.preventDefault();
+      go(slides.indexOf(slide));
+    });
 
-    window.addEventListener('scroll', kick, { passive: true });
-    window.addEventListener('resize', kick, { passive: true });
-    window.addEventListener('load', kick, { once: true });
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(kick);
-    kick();
+    window.addEventListener('hashchange', () => {
+      const id = location.hash.replace('#', '');
+      const i = slides.findIndex((s) => s.id === id || (id && s.contains(document.getElementById(id))));
+      if (i >= 0) go(i);
+    });
   }
 
-  /* 复制命令 */
+  /* ---------------------------------------------------------------- 复制 */
   document.querySelectorAll('.copy[data-copy]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const src = document.querySelector(btn.dataset.copy);

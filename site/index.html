@@ -9,7 +9,7 @@
       content="CourseDesk 把雨课堂和学习通收进一个 Windows 窗口：在课状态、随堂题、签到与作业一屏看完。本地运行，接口结构变了会提醒你。"
     />
     <meta name="theme-color" content="#f6f7f3" />
-    <meta name="site-build" content="r7" />
+    <meta name="site-build" content="r9" />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'"
@@ -24,7 +24,7 @@
     <meta property="og:image" content="https://qiuizi.github.io/CourseDesk/assets/today.jpg" />
     <meta property="og:url" content="https://qiuizi.github.io/CourseDesk/" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b6e4f'/%3E%3Cpath d='M9 11h14M9 16h9M9 21h11' stroke='%23f6f7f3' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=r7" />
+    <link rel="stylesheet" href="./styles.css?v=r9" />
   </head>
   <body>
     <a class="skip" href="#main">跳到正文</a>
@@ -59,9 +59,9 @@
       </div>
     </header>
 
-    <main id="main">
+    <main id="main" class="deck">
       <!-- ---------------------------------------------------------- HERO -->
-      <section class="hero">
+      <section class="slide slide--cover hero" id="cover" data-label="封面">
         <div class="wrap hero__grid">
           <div class="hero__copy">
             <p class="eyebrow">
@@ -136,7 +136,7 @@
       </section>
 
       <!-- ---------------------------------------------------------- WHY -->
-      <section class="section" id="why">
+      <section class="slide section" id="why" data-label="为什么">
         <div class="wrap">
           <header class="sec-head">
             <span class="sec-no mono">01</span>
@@ -176,7 +176,7 @@
       </section>
 
       <!-- ---------------------------------------------------------- UI -->
-      <section class="section section--ui" id="ui">
+      <section class="slide section section--ui" id="ui" data-label="界面">
         <div class="wrap">
           <header class="sec-head">
             <span class="sec-no mono">02</span>
@@ -232,7 +232,7 @@
       </section>
 
       <!-- ---------------------------------------------------------- FEATURES -->
-      <section class="section" id="features">
+      <section class="slide section" id="features" data-label="功能">
         <div class="wrap">
           <header class="sec-head">
             <span class="sec-no mono">03</span>
@@ -267,7 +267,7 @@
       </section>
 
       <!-- ---------------------------------------------------------- MECHANISM -->
-      <section class="dark" id="how-it-works">
+      <section class="slide dark" id="how-it-works" data-label="机制">
         <div class="wrap">
           <header class="sec-head sec-head--dark">
             <span class="sec-no mono">04</span>
@@ -315,7 +315,7 @@
       </section>
 
       <!-- ---------------------------------------------------------- GET STARTED -->
-      <section class="section" id="how">
+      <section class="slide section" id="how" data-label="上手">
         <div class="wrap">
           <header class="sec-head">
             <span class="sec-no mono">05</span>
@@ -358,7 +358,7 @@ npm run pack     <span class="c"># 打包便携版 exe</span></code></pre>
       </section>
 
       <!-- ---------------------------------------------------------- LIMITS -->
-      <section class="section section--limits" id="limits">
+      <section class="slide section section--limits" id="limits" data-label="边界">
         <div class="wrap">
           <header class="sec-head">
             <span class="sec-no mono">06</span>
@@ -402,7 +402,7 @@ npm run pack     <span class="c"># 打包便携版 exe</span></code></pre>
       </section>
 
       <!-- ---------------------------------------------------------- FAQ + DOWNLOAD -->
-      <section class="section" id="faq">
+      <section class="slide section" id="faq" data-label="问答">
         <div class="wrap faq">
           <header class="sec-head">
             <span class="sec-no mono">07</span>
@@ -439,7 +439,11 @@ npm run pack     <span class="c"># 打包便携版 exe</span></code></pre>
             </details>
           </div>
 
-          <div class="download" id="download">
+        </div>
+      </section>
+    <footer class="slide footer" id="end" data-label="下载">
+      <div class="wrap end">
+        <div class="download" id="download">
             <div class="download__copy">
               <h3>拿走它</h3>
               <p>Windows x64。便携版不写注册表，拷走 exe 就能换机器；安装包会建快捷方式。</p>
@@ -453,16 +457,11 @@ npm run pack     <span class="c"># 打包便携版 exe</span></code></pre>
               </a>
             </div>
           </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="wrap footer__inner">
+<div class="footer__inner">
         <div class="footer__brand">
           <span class="brand__mark" aria-hidden="true"></span>
           <span>CourseDesk</span>
-          <span class="mono footer__ver">v0.1.0 · r7</span>
+          <span class="mono footer__ver">v0.1.0 · r9</span>
         </div>
         <p class="footer__note">
           个人本地测试用途：只操作自己的账号、只在自己机器上跑、不对外提供服务。协议细节来自公开开源项目，
@@ -473,9 +472,15 @@ npm run pack     <span class="c"># 打包便携版 exe</span></code></pre>
           <a href="https://github.com/Qiuizi/CourseDesk/blob/main/docs/%E5%8D%8F%E8%AE%AE%E4%BE%9D%E6%8D%AE.md" rel="noopener">协议依据</a>
           <a href="https://github.com/Qiuizi/CourseDesk/blob/main/LICENSE" rel="noopener">MIT License</a>
         </nav>
+        </div>
       </div>
     </footer>
+      <nav class="deck-dots" aria-label="章节导航"></nav>
+      <p class="deck-hint" aria-hidden="true">滚动 / ↑↓ 翻页</p>
+    </main>
 
-    <script src="./app.js?v=r7" defer></script>
+
+
+    <script src="./app.js?v=r9" defer></script>
   </body>
 </html>

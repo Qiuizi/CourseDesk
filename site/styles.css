@@ -150,7 +150,8 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   border-bottom: 1px solid transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
-.nav a:hover { color: var(--ink); border-bottom-color: var(--accent); }
+.nav a:hover,
+.nav a.is-active { color: var(--ink); border-bottom-color: var(--accent); }
 
 .topbar__actions {
   margin-left: auto;
@@ -919,23 +920,134 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   to { opacity: 1; transform: none; }
 }
 
-/* 渐进消失：app.js 每次滚动只写一个 --p（0–1）。透明度始终生效，
-   位移只在系统允许动效时叠加——关掉动画的用户也能看到"渐隐"，但不会被推着走。 */
-[data-fading] {
-  opacity: var(--p, 1);
+/* ------------------------------------------------------- 幻灯片分页（一屏一页） */
+
+:root { --bar: 58px; }
+
+body { overflow: hidden; }
+
+#main.deck {
+  position: fixed;
+  inset: var(--bar) 0 0 0;
+  overflow: hidden;
+  background: var(--paper);
 }
-[data-fading][data-faded] { pointer-events: none; }
-/* 消失中的页轻微失焦：像镜头拉开，不是简单调透明度 */
-[data-fading][data-blur] {
-  filter: blur(calc((1 - var(--p, 1)) * 3px));
+
+.deck .slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 16px 0 26px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
-@media (prefers-reduced-motion: no-preference) {
-  [data-fading] {
-    /* 淡出的同时轻微下沉 + 回缩，像一层纸被推远；数值很小，避免文字发虚 */
-    transform: translate3d(0, calc((1 - var(--p, 1)) * 18px), 0) scale(calc(0.972 + 0.028 * var(--p, 1)));
-    transform-origin: 50% 40%;
-    will-change: opacity, transform;
-  }
+.deck .slide.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 内容高的页在页内滚动，滚到底再翻页 */
+.deck .slide > .wrap {
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: 6px;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #d6dcd4 transparent;
+}
+.deck .slide > .wrap::-webkit-scrollbar { width: 6px; }
+.deck .slide > .wrap::-webkit-scrollbar-thumb { background: #d6dcd4; border-radius: 3px; }
+
+/* 原来给长文档的纵向节奏，在分页里让位给"一屏" */
+.deck .section,
+.deck .dark,
+.deck .hero,
+.deck .footer { padding: 0; border-top: 0; }
+.deck .hero__grid { padding-top: 4px; padding-bottom: 4px; }
+.deck .sec-head { margin-bottom: 30px; }
+.deck .pipe { margin-bottom: 24px; }
+.deck .footer { background: transparent; }
+.deck .end { display: flex; flex-direction: column; gap: 26px; }
+.deck .end .download { margin: 0; }
+.deck .end .footer__inner { padding-top: 20px; border-top: 1px solid var(--line); }
+.deck .end .download__actions { margin-top: 0; }
+
+/* 图不要撑破一屏 */
+.deck .frame { margin: 0 auto; width: fit-content; max-width: 100%; }
+.deck .frame__stage img { max-height: 50vh; width: auto; max-width: 100%; }
+.deck .shots__tabs { justify-content: center; }
+.deck .shots__caption { text-align: center; }
+.deck .code { margin-top: 6px; }
+.deck .code pre { max-height: 28vh; overflow: auto; }
+
+/* 右侧章节点 */
+.deck-dots {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.deck-dots button {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #c9d2c7;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.deck-dots button:hover { border-color: var(--accent); }
+.deck-dots button.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.25);
+}
+.deck-dots button span {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 7px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.deck-dots button:hover span,
+.deck-dots button:focus-visible span { opacity: 1; }
+
+.deck-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  z-index: 25;
+  transition: opacity 0.3s ease;
+  animation: hint-bob 2.6s ease-in-out infinite;
+}
+.deck:not(.is-cover) .deck-hint { opacity: 0; }
+@keyframes hint-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 4px); }
 }
 
 /* ------------------------------------------------------------------ 响应式 */
@@ -988,10 +1100,6 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .download__actions .btn { flex: 1 1 auto; }
 }
 
-@media print {
-  [data-fading] { opacity: 1 !important; transform: none !important; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
@@ -1000,6 +1108,30 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
     transition-duration: 0.001ms !important;
   }
   /* 淡入淡出不是「位移」，留着；被禁掉的是所有会动的东西 */
-  .frame__stage { transition-duration: 0.3s !important; }
+  .frame__stage,
+  .deck .slide { transition-duration: 0.3s !important; }
   .reveal { opacity: 1; transform: none; }
+}
+
+/* 小屏：章节点移到底部，横排 */
+@media (max-width: 880px) {
+  .deck-dots {
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: 12px;
+    transform: translateX(-50%);
+    flex-direction: row;
+    gap: 10px;
+  }
+  .deck-dots button span { display: none; }
+  .deck-hint { display: none; }
+  .deck .slide { padding: 10px 0 30px; }
+  .deck .frame__stage img { max-height: 42vh; }
+  .deck .sec-head { margin-bottom: 20px; }
+  /* 手机上首屏只留文案，配图卡片会撑破一屏 */
+  .deck .now { display: none; }
+  .deck .hero__title { font-size: clamp(34px, 10.5vw, 52px); }
+  .deck .slide > .wrap { padding-bottom: 40px; }
+  .deck .matrix { min-width: 520px; font-size: 13.5px; }
 }
