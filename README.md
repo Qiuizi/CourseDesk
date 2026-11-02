@@ -282,8 +282,10 @@ node scripts/probe.mjs --mode simple --tab yuketang --demo --shot shots/x.png \
 
 环境变量：`COURSEDESK_DEMO=1`、`COURSEDESK_TAB=<tab>`、`COURSEDESK_WINDOW=1440x920`、`COURSEDESK_SHOT=<png>`。
 
-介绍页源码在 [`site/`](site/index.html)，无构建步骤、无外部资源：滚动时每个 section（连同首屏、页脚）
-按离视口的距离整页渐隐：目标值由滚动位置算，显示值用阻尼跟随（滚轮跳格、拖滚动条、锚点跳转都是滑过去的），消失中的一页会轻微下沉、回缩并失焦；截图切换淡出→换页→淡入。`prefers-reduced-motion` 下保留透明度与失焦，去掉位移与缩放。
+介绍页源码在 [`site/`](site/index.html)，无构建步骤、无外部资源：整站是 9 屏的演示，滚轮 / ↑↓ / 触屏上下滑一次翻一页——
+旧页先淡出、新页再淡入（PPT 式，不会两页同时占屏）；内容高的页先在页内滚动，滚到边界才翻页；
+右侧章节点可直接跳转，`#why` 这类锚点也走同一套。截图切换同样是淡出→换页→淡入。
+`prefers-reduced-motion` 下保留透明度过渡，去掉位移与缩放。
 推 `site/**` 后由 [`.github/workflows/pages.yml`](.github/workflows/pages.yml) 部署到 GitHub Pages。想在本地看一眼：
 
 ```bash
