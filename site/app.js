@@ -80,7 +80,7 @@
     swapTimer = window.setTimeout(() => {
       apply(id, focus);
       requestAnimationFrame(() => stage.classList.remove('is-swapping'));
-    }, 160);
+    }, 300);
   }
 
   tabs.forEach((tab) => tab.addEventListener('click', () => select(tab.dataset.shot)));

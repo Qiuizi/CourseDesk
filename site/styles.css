@@ -520,11 +520,11 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   position: relative;
   background: var(--paper-2);
   /* 切页也走淡出→淡入，和滚动的那套节奏一致 */
-  transition: opacity 0.18s ease;
+  transition: opacity 0.3s ease;
 }
 .frame__stage.is-swapping { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  .frame__stage { transition: opacity 0.18s ease, transform 0.18s ease; }
+  .frame__stage { transition: opacity 0.3s ease, transform 0.3s ease; }
   .frame__stage.is-swapping { transform: translateY(6px); }
 }
 .panel { display: none; }
@@ -994,6 +994,6 @@ code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
     transition-duration: 0.001ms !important;
   }
   /* 淡入淡出不是「位移」，留着；被禁掉的是所有会动的东西 */
-  .frame__stage { transition-duration: 0.18s !important; }
+  .frame__stage { transition-duration: 0.3s !important; }
   .reveal { opacity: 1; transform: none; }
 }
