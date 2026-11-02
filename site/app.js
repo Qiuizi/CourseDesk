@@ -102,6 +102,7 @@
   const deck = document.getElementById('main');
   const slides = deck ? Array.from(deck.querySelectorAll('.slide')) : [];
   const dots = document.querySelector('.deck-dots');
+  const countEl = document.querySelector('.deck-count');
   let current = 0;
   let busy = false;
   let dotEls = [];
@@ -140,6 +141,7 @@
       });
       dotEls.forEach((d, idx) => d.classList.toggle('is-active', idx === i));
       deck.classList.toggle('is-cover', i === 0);
+      if (countEl) countEl.textContent = `${String(i + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
       document.querySelectorAll('.nav a').forEach((a) => {
         const target = document.getElementById(a.getAttribute('href').slice(1));
         a.classList.toggle('is-active', Boolean(target) && target.closest('.slide') === slides[i]);
