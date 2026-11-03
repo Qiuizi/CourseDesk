@@ -30,7 +30,7 @@
 
   --r: 10px;
   --pad: 18px;
-  --titlebar: 40px;
+  --titlebar: 58px;
   --rail: 78px;
 }
 
@@ -126,7 +126,7 @@ body::after {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 104px 0 22px;
+  padding: 0 112px 0 24px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(180deg, rgba(154, 230, 110, 0.05), transparent);
   -webkit-app-region: drag;
@@ -1263,9 +1263,15 @@ body.is-compact .stat__value {
   font-family: inherit;
   font-size: 11.5px;
   letter-spacing: 0.02em;
-  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 14px;
   border-radius: 999px;
   cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
   text-align: center;
   white-space: nowrap;
   transition: color 0.18s ease;
@@ -1309,35 +1315,24 @@ body.is-hidden *::after {
 .win-ctl {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-left: 4px;
+  gap: 8px;
+  margin-left: 8px;
   -webkit-app-region: no-drag;
 }
 .win-ctl__dot {
-  width: 18px;
-  height: 18px;
+  width: 13px;
+  height: 13px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.12);
-  color: #cfe0d2;
-  transition: transform 0.12s ease, background 0.16s ease, color 0.16s ease;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.16);
+  transition: transform 0.12s ease, filter 0.16s ease;
 }
-.win-ctl__dot span {
-  font-size: 11px;
-  line-height: 1;
-  opacity: 0;
-  transform: translateY(0.5px);
-  transition: opacity 0.12s ease;
-}
-.win-ctl__dot:hover { transform: scale(1.14); }
-.win-ctl__dot:hover span { opacity: 1; }
-.win-ctl__dot--min { background: rgba(255, 184, 77, 0.2); color: #ffcf8a; }
-.win-ctl__dot--max { background: rgba(154, 230, 110, 0.16); color: #b7ef9a; }
-.win-ctl__dot--close { background: rgba(255, 111, 97, 0.22); color: #ffb3ad; }
+.win-ctl__dot:hover { transform: scale(1.12); filter: brightness(1.08); }
+.win-ctl__dot--close { background: #ff5f57; }
+.win-ctl__dot--min { background: #febc2e; }
+.win-ctl__dot--max { background: #28c840; }
 
 /* 过场遮罩里的提示 */
 .mode-veil {
@@ -1346,25 +1341,63 @@ body.is-hidden *::after {
 }
 .mode-veil__inner {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   font-size: 13px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: #5c6b62;
   opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform: translateY(6px) scale(0.98);
+  transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 .mode-veil.is-in .mode-veil__inner { opacity: 1; transform: none; }
 .mode-veil--dev .mode-veil__inner { color: #9ae66e; }
-.mode-veil__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: veil-pulse 1s ease-in-out infinite;
+.mode-veil__mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(140deg, #12906a, #0b6e4f);
+  box-shadow: 0 0 0 5px rgba(11, 110, 79, 0.1);
+  animation: veil-mark 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
-@keyframes veil-pulse {
-  0%, 100% { opacity: 0.35; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
+.mode-veil--dev .mode-veil__mark {
+  background: linear-gradient(140deg, #9ae66e, #5cc06a);
+  box-shadow: 0 0 0 5px rgba(154, 230, 110, 0.12);
+}
+@keyframes veil-mark {
+  from { transform: scale(0.72) rotate(-8deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.mode-veil__bar {
+  width: 96px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(20, 26, 22, 0.08);
+  overflow: hidden;
+}
+.mode-veil--dev .mode-veil__bar { background: rgba(255, 255, 255, 0.1); }
+.mode-veil__bar::after {
+  content: "";
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: 2px;
+  background: #0b6e4f;
+  animation: veil-run 0.9s ease-in-out infinite;
+}
+.mode-veil--dev .mode-veil__bar::after { background: #9ae66e; }
+@keyframes veil-run {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(280%); }
+}
+
+/* 切换完成后新界面轻微放大进场，配合遮罩收尾 */
+@keyframes shell-in {
+  from { opacity: 0; transform: scale(0.994); }
+  to { opacity: 1; transform: none; }
+}
+.app { animation: shell-in 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .app { animation: none; }
 }

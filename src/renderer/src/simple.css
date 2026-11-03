@@ -64,7 +64,7 @@ body.is-simple::after {
   align-items: center;
   gap: 18px;
   /* 右侧留出 Windows 的最小化 / 关闭按钮色块 */
-  padding: 0 112px 0 26px;
+  padding: 0 112px 0 24px;
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid var(--s-line);
   -webkit-app-region: drag;
@@ -105,7 +105,12 @@ body.is-simple::after {
   border: none;
   background: none;
   border-radius: 9px;
-  padding: 6px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 13px;
+  line-height: 1;
   font-family: inherit;
   font-size: 13px;
   font-weight: 550;
@@ -1144,7 +1149,6 @@ body.is-simple::after {
 }
 .s-app .mode-switch button {
   font-size: 12px;
-  padding: 4px 14px;
   color: var(--s-dim);
 }
 .s-app .mode-switch button.is-on { color: var(--s-accent); }
@@ -1162,13 +1166,10 @@ body.is-hidden *::after {
 }
 
 /* 浅色主题下的自绘窗口按钮 */
-.s-app .win-ctl__dot {
-  width: 18px;
-  height: 18px;
-  background: #eef1ec;
-  color: #6f7d75;
-}
-.s-app .win-ctl__dot--min { background: #fbf1d9; color: #9a6c14; }
-.s-app .win-ctl__dot--max { background: #e2f1e8; color: #2f6b4f; }
-.s-app .win-ctl__dot--close { background: #fbe6e3; color: #a3332a; }
+.s-app .win-ctl__dot { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12); }
 .s-app .mode-veil { background: #f7f9f6; }
+
+.s-app { animation: shell-in 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .s-app { animation: none; }
+}

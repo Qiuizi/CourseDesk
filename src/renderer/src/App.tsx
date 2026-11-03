@@ -79,8 +79,9 @@ export default function App(): ReactNode {
           aria-hidden
         >
           <div className="mode-veil__inner">
-            <span className="mode-veil__dot" />
-            {veil.mode === 'dev' ? '切换到开发者模式…' : '回到普通模式…'}
+            <span className="mode-veil__mark" aria-hidden />
+            <span>{veil.mode === 'dev' ? '切换到开发者模式' : '回到普通模式'}</span>
+            <span className="mode-veil__bar" aria-hidden />
           </div>
         </div>
       )}
