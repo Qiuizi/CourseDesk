@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useEngine } from './lib/store';
 import { DevShell } from './dev/DevShell';
 import { SimpleShell, SimpleSplash } from './simple/SimpleShell';
@@ -11,6 +11,16 @@ import { SimpleShell, SimpleSplash } from './simple/SimpleShell';
  */
 export default function App(): ReactNode {
   const { snap, ready, call } = useEngine();
+
+  // 收进托盘 / 切到后台时暂停所有动画，别让脉冲灯和 spinner 继续烧 GPU
+  useEffect(() => {
+    const sync = (): void => {
+      document.body.classList.toggle('is-hidden', document.hidden);
+    };
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  }, []);
 
   if (!ready) return <SimpleSplash />;
 

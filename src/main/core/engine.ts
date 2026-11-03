@@ -32,6 +32,18 @@ import type {
   SignRecord,
 } from '@shared/types';
 
+/** 事件里只留小载荷：整段响应会把内存和每次快照的序列化都撑起来 */
+function trimPayload(data?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!data) return undefined;
+  try {
+    const text = JSON.stringify(data);
+    if (text.length <= 1024) return data;
+    return { truncated: true, bytes: text.length, keys: Object.keys(data).slice(0, 8) };
+  } catch {
+    return { truncated: true };
+  }
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   yuketang: {
     host: 'www.yuketang.cn',
@@ -471,7 +483,7 @@ export class Engine {
     this.store.update((d) => {
       d.settings = this.snap.settings;
       d.secrets = { ...d.secrets, aiKey: encryptSecret(this.aiKey) };
-      d.events = this.snap.events.slice(-300);
+      d.events = this.snap.events.slice(-200);
       d.cache = {
         ...d.cache,
         ytCourses: this.snap.yuketang.courses,
@@ -497,7 +509,7 @@ export class Engine {
     this.pushTimer = setTimeout(() => {
       this.pushTimer = null;
       this.broadcast(this.snap);
-    }, 120);
+    }, 200);
   }
 
   emit(input: {
@@ -515,11 +527,11 @@ export class Engine {
       kind: input.kind,
       level: input.level,
       title: input.title,
-      detail: input.detail,
       at: Date.now(),
-      data: input.data,
+      data: trimPayload(input.data),
+      detail: input.detail && input.detail.length > 600 ? `${input.detail.slice(0, 600)}…` : input.detail,
     };
-    this.snap.events = [...this.snap.events, evt].slice(-300);
+    this.snap.events = [...this.snap.events, evt].slice(-200);
     if (!input.quiet) {
       if (input.level === 'error') log.error(`${input.platform}/${input.kind}`, input.title, input.detail);
       else if (input.level === 'warn') log.warn(`${input.platform}/${input.kind}`, input.title, input.detail);

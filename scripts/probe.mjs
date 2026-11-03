@@ -52,6 +52,7 @@ const child = spawn(customExe || exe, customExe ? [`--remote-debugging-port=${po
     COURSEDESK_TAB: tab,
     COURSEDESK_WINDOW: `${width}x${height}`,
     COURSEDESK_ISOLATED: '1',
+    COURSEDESK_MODE: mode,
     ...(demo ? { COURSEDESK_DEMO: '1' } : {}),
   },
   stdio: ['ignore', 'pipe', 'pipe'],

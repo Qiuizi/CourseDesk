@@ -42,6 +42,7 @@ const api = {
   aiKeySet: (key: string): Promise<{ ok: boolean; hasKey: boolean }> => ipcRenderer.invoke(IPC.aiKeySet, key),
 
   setMode: (mode: 'simple' | 'dev'): Promise<Settings> => ipcRenderer.invoke(IPC.setMode, mode),
+  quit: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.quit),
   updateCheck: (): Promise<{ status: string; version?: string; percent?: number; message?: string }> =>
     ipcRenderer.invoke(IPC.updateCheck),
   updateInstall: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.updateInstall),

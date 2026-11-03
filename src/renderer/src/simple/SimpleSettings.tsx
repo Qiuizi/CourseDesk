@@ -408,6 +408,14 @@ export function SimpleSettings({ snap, call }: PageProps): ReactNode {
             <SRow title="版本" sub={`CourseDesk v${snap.version}`} />
             <SRow title="数据位置" sub="配置、日志、登录态都在本机用户目录" />
             <SRow title="协议依据" sub="GitHub 开源项目（docs/协议依据.md）" />
+            <div style={{ marginTop: 12 }}>
+              <SBtn size="sm" variant="ghost" onClick={() => void call((api) => api.quit())}>
+                完全退出 CourseDesk
+              </SBtn>
+              <span style={{ marginLeft: 10, fontSize: 12.5, color: 'var(--s-dim-2)' }}>
+                关窗只是收进托盘；彻底退出用这个或托盘菜单
+              </span>
+            </div>
           </SCard>
         </div>
       </div>

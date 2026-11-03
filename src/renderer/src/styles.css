@@ -1240,3 +1240,50 @@ body.is-compact .panel {
 body.is-compact .stat__value {
   font-size: 22px;
 }
+
+/* ------------------------------------------------------------ 模式切换开关 */
+
+.mode-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(154, 230, 110, 0.05);
+  -webkit-app-region: no-drag;
+}
+.mode-switch button {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  padding: 4px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+.mode-switch button.is-on { color: var(--ink); }
+.mode-switch__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: rgba(154, 230, 110, 0.16);
+  border: 1px solid rgba(154, 230, 110, 0.38);
+  transition: transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.mode-switch.is-dev .mode-switch__thumb { transform: translateX(100%); }
+
+/* 窗口在后台：停掉所有动画，降低隐藏时的 GPU / CPU 占用 */
+body.is-hidden *,
+body.is-hidden *::before,
+body.is-hidden *::after {
+  animation-play-state: paused !important;
+}

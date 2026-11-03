@@ -118,8 +118,30 @@ export function useEngine(): {
 export function useTick(intervalMs = 1000): number {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(t);
+    let timer = 0;
+    const stop = (): void => {
+      if (timer) {
+        clearInterval(timer);
+        timer = 0;
+      }
+    };
+    const start = (): void => {
+      stop();
+      timer = window.setInterval(() => setNow(Date.now()), intervalMs);
+    };
+    const onVisibility = (): void => {
+      if (document.hidden) stop();
+      else {
+        setNow(Date.now());
+        start();
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [intervalMs]);
   return now;
 }

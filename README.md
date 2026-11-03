@@ -323,6 +323,14 @@ node_modules/electron/dist/electron.exe scripts/preview.cjs -- \
 
 排查：通知不弹 → 看 Windows 设置里 CourseDesk 的通知权限；更新检查 404 → 确认 Release 里上传了 `latest.yml`；便携版提示不支持 → 正常，改用安装版。
 
+### 资源占用
+
+- 快照推送限流：窗口可见最多 3 次/秒，收进托盘后 5 秒一次，恢复显示时立即补一次。
+- 窗口隐藏时暂停所有 CSS 动画与 1s tick 计时器；托盘里的进程只保留轮询。
+- 事件载荷超过 1 KB 只留 `{truncated, bytes, keys}`，保留条数 300 → 200，避免长期运行时快照越推越大。
+- 两套界面都去掉了 `backdrop-filter` 这类常驻合成开销；标题栏（Windows 最大化/最小化/关闭色块）随模式改成浅色 / 深色，不再一直是黑块。
+- 「设置 → 关于 → 完全退出 CourseDesk」或托盘菜单退出，避免关窗后误以为退出而文件被占用。
+
 ## 数据与隐私
 
 | 数据 | 位置 | 说明 |

@@ -4,6 +4,7 @@ import type { Call } from '../lib/store';
 import { useTick } from '../lib/store';
 import { hhmmss } from '../lib/format';
 import { SCard, SDot } from './ui';
+import { ModeSwitch } from '../components/ModeSwitch';
 import { Today } from './Today';
 import { SimpleYuketang } from './SimpleYuketang';
 import { SimpleChaoxing } from './SimpleChaoxing';
@@ -99,17 +100,7 @@ export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): 
             学习通
           </button>
         </div>
-        <div className="s-modeswitch">
-          <button type="button" className="is-active" onClick={() => undefined}>
-            普通
-          </button>
-          <button
-            type="button"
-            onClick={() => void call((api) => api.setMode('dev'))}
-          >
-            开发者
-          </button>
-        </div>
+        <ModeSwitch mode={snap.settings.ui.mode} onChange={(m) => void call((api) => api.setMode(m))} />
         <span className="s-conn__item" style={{ fontVariantNumeric: 'tabular-nums' }}>
           {hhmmss(now)}
         </span>

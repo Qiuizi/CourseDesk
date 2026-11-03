@@ -129,7 +129,7 @@ export function DevShell({ snap, ready, call }: { snap: AppSnapshot; ready: bool
       <TitleBar
         snap={snap}
         onToggleMonitor={() => void call((api) => api.toggleMonitors(!snap.yuketang.monitor.running))}
-        onSwitchMode={() => void call((api) => api.setMode('simple'))}
+        onSetMode={(m) => void call((api) => api.setMode(m))}
       />
       <Sidebar
         tab={tab}

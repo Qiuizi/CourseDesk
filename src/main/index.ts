@@ -34,11 +34,65 @@ function resourcePath(file: string): string {
     : join(app.getAppPath(), 'resources', file);
 }
 
+let lastPushAt = 0;
+let pendingSnap: AppSnapshot | null = null;
+let pushTimer: NodeJS.Timeout | null = null;
+
+/** 快照推送限流：可见时最多 3 次/秒，窗口收进托盘后 5 秒一次，省 IPC 与渲染开销 */
 function push(snap: AppSnapshot): void {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('app:push', snap);
-  }
   updateTray(snap);
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const hidden = !mainWindow.isVisible();
+  const now = Date.now();
+
+  if (hidden) {
+    pendingSnap = snap;
+    if (!pushTimer) {
+      pushTimer = setTimeout(() => {
+        pushTimer = null;
+        if (pendingSnap && mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('app:push', pendingSnap);
+          lastPushAt = Date.now();
+        }
+      }, 5000);
+    }
+    return;
+  }
+
+  const wait = Math.max(0, 300 - (now - lastPushAt));
+  pendingSnap = snap;
+  if (wait === 0) {
+    lastPushAt = now;
+    mainWindow.webContents.send('app:push', pendingSnap);
+    pendingSnap = null;
+    return;
+  }
+  if (!pushTimer) {
+    pushTimer = setTimeout(() => {
+      pushTimer = null;
+      if (pendingSnap && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('app:push', pendingSnap);
+        lastPushAt = Date.now();
+        pendingSnap = null;
+      }
+    }, wait);
+  }
+}
+
+/** 普通 / 开发者两套界面的窗口外观：标题栏按钮色块跟着模式走 */
+function applyTheme(mode: 'simple' | 'dev'): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const dark = mode === 'dev';
+  mainWindow.setBackgroundColor(dark ? '#0a0d0b' : '#f5f7f4');
+  try {
+    mainWindow.setTitleBarOverlay({
+      color: dark ? '#0a0d0b' : '#ffffff',
+      symbolColor: dark ? '#9ae66e' : '#141a16',
+      height: 40,
+    });
+  } catch {
+    /* Linux 等平台不支持 overlay */
+  }
 }
 
 function createMainWindow(): void {
@@ -53,13 +107,13 @@ function createMainWindow(): void {
     minWidth: 1080,
     minHeight: 680,
     show: false,
-    backgroundColor: '#0a0d0b',
+    backgroundColor: (engine?.snapshot().settings.ui.mode ?? 'simple') === 'dev' ? '#0a0d0b' : '#f5f7f4',
     title: APP_NAME,
     icon: resourcePath('icon.png'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: '#0a0d0b',
-      symbolColor: '#9ae66e',
+      color: (engine?.snapshot().settings.ui.mode ?? 'simple') === 'dev' ? '#0a0d0b' : '#ffffff',
+      symbolColor: (engine?.snapshot().settings.ui.mode ?? 'simple') === 'dev' ? '#9ae66e' : '#141a16',
       height: 40,
     },
     webPreferences: {
@@ -69,12 +123,22 @@ function createMainWindow(): void {
       sandbox: false,
       spellcheck: false,
       webviewTag: false,
+      backgroundThrottling: true,
     },
   });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+    applyTheme(engine?.snapshot().settings.ui.mode ?? 'simple');
     maybeScreenshot();
+  });
+
+  mainWindow.on('show', () => {
+    if (pendingSnap && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('app:push', pendingSnap);
+      lastPushAt = Date.now();
+      pendingSnap = null;
+    }
   });
 
   mainWindow.on('close', (event) => {
@@ -212,6 +276,10 @@ if (!gotLock) {
       await openBrowserWindow(url, title);
     };
     await engine.init(version);
+    const forcedMode = process.env['COURSEDESK_MODE'];
+    if (forcedMode === 'simple' || forcedMode === 'dev') {
+      engine.setMode(forcedMode);
+    }
 
     setNotificationClickHandler(() => showWindow());
     updater = startUpdater(
@@ -231,7 +299,14 @@ if (!gotLock) {
       allowWhenHidden: () => engine?.snapshot().settings.behavior.notifyWhenHidden ?? true,
     });
     applyBehavior(engine.snapshot().settings);
-    registerIpc({ engine, push, version, updater, onSettingsApplied: applyBehavior });
+    registerIpc({
+      engine,
+      push,
+      version,
+      updater,
+      onSettingsApplied: applyBehavior,
+      onModeChanged: applyTheme,
+    });
     createMainWindow();
     buildTray();
 

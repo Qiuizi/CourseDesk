@@ -30,6 +30,7 @@ export const IPC = {
   driftAccept: 'drift:accept',
 
   setMode: 'app:set-mode',
+  quit: 'app:quit',
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   notifyTest: 'notify:test',

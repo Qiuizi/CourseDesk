@@ -3,7 +3,7 @@
  * 渲染进程只能通过这里定义的通道调用，没有 node 权限。
  */
 
-import { ipcMain, shell } from 'electron';
+import { app, ipcMain, shell } from 'electron';
 import { IPC } from '@shared/ipc';
 import type { AppSnapshot, Settings } from '@shared/types';
 import type { Engine } from './engine';
@@ -20,6 +20,7 @@ export interface IpcContext {
   version: string;
   updater: UpdaterHandle | null;
   onSettingsApplied: (settings: Settings) => void;
+  onModeChanged: (mode: Settings['ui']['mode']) => void;
 }
 
 export function registerIpc(ctx: IpcContext): void {
@@ -48,7 +49,16 @@ export function registerIpc(ctx: IpcContext): void {
     ctx.onSettingsApplied(next);
     return next;
   });
-  handle(IPC.setMode, (mode: Settings['ui']['mode']) => engine.setMode(mode));
+  handle(IPC.setMode, (mode: Settings['ui']['mode']) => {
+    const next = engine.setMode(mode);
+    ctx.onModeChanged(mode);
+    return next;
+  });
+
+  handle(IPC.quit, () => {
+    setImmediate(() => app.quit());
+    return { ok: true };
+  });
 
   handle(IPC.updateCheck, () =>
     ctx.updater?.check(true) ?? { status: 'unsupported' as const, message: '更新模块未启动' },
