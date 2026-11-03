@@ -11,6 +11,7 @@ import { EventsPage } from '../components/EventsPage';
 import { DriftPage } from '../components/DriftPage';
 import { SettingsPage } from '../components/SettingsPage';
 import { Lamp, Pill } from '../components/ui';
+import { switchMode } from '../lib/mode';
 
 function Rail({ snap, call }: { snap: AppSnapshot; call: Call }): ReactNode {
   const now = useTick(1000);
@@ -129,7 +130,7 @@ export function DevShell({ snap, ready, call }: { snap: AppSnapshot; ready: bool
       <TitleBar
         snap={snap}
         onToggleMonitor={() => void call((api) => api.toggleMonitors(!snap.yuketang.monitor.running))}
-        onSetMode={(m) => void call((api) => api.setMode(m))}
+        onSetMode={switchMode}
       />
       <Sidebar
         tab={tab}

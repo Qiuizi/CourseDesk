@@ -31,6 +31,7 @@ export const IPC = {
 
   setMode: 'app:set-mode',
   quit: 'app:quit',
+  chromeReady: 'app:chrome-ready',
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   notifyTest: 'notify:test',

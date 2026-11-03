@@ -64,7 +64,7 @@ body.is-simple::after {
   align-items: center;
   gap: 18px;
   /* 右侧留出 Windows 的最小化 / 关闭按钮色块 */
-  padding: 0 152px 0 24px;
+  padding: 0 176px 0 26px;
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid var(--s-line);
   -webkit-app-region: drag;

@@ -126,7 +126,7 @@ body::after {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 150px 0 16px;
+  padding: 0 168px 0 22px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(180deg, rgba(154, 230, 110, 0.05), transparent);
   -webkit-app-region: drag;
@@ -1286,4 +1286,18 @@ body.is-hidden *,
 body.is-hidden *::before,
 body.is-hidden *::after {
   animation-play-state: paused !important;
+}
+
+/* 模式切换遮罩：先铺满、换完再淡出 */
+.mode-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.mode-veil.is-in {
+  opacity: 1;
+  transition: opacity 0.1s ease;
 }

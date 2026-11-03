@@ -34,6 +34,7 @@ function resourcePath(file: string): string {
     : join(app.getAppPath(), 'resources', file);
 }
 
+let appliedTheme: 'simple' | 'dev' | null = null;
 let lastPushAt = 0;
 let pendingSnap: AppSnapshot | null = null;
 let pushTimer: NodeJS.Timeout | null = null;
@@ -82,13 +83,16 @@ function push(snap: AppSnapshot): void {
 /** 普通 / 开发者两套界面的窗口外观：标题栏按钮色块跟着模式走 */
 function applyTheme(mode: 'simple' | 'dev'): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (appliedTheme === mode) return;
+  appliedTheme = mode;
   const dark = mode === 'dev';
   mainWindow.setBackgroundColor(dark ? '#0a0d0b' : '#f5f7f4');
   try {
     mainWindow.setTitleBarOverlay({
       color: dark ? '#0a0d0b' : '#ffffff',
       symbolColor: dark ? '#9ae66e' : '#141a16',
-      height: 40,
+      // 和顶栏同高，最小化 / 最大化 / 关闭 三个按钮才会和文字对齐
+      height: dark ? 40 : 58,
     });
   } catch {
     /* Linux 等平台不支持 overlay */
@@ -101,6 +105,7 @@ function createMainWindow(): void {
   const width = Number.isFinite(w) && w >= 960 ? w : 1440;
   const height = Number.isFinite(h) && h >= 600 ? h : 920;
 
+  appliedTheme = null;
   mainWindow = new BrowserWindow({
     width,
     height,

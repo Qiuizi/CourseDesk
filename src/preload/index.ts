@@ -43,6 +43,8 @@ const api = {
 
   setMode: (mode: 'simple' | 'dev'): Promise<Settings> => ipcRenderer.invoke(IPC.setMode, mode),
   quit: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.quit),
+  chromeReady: (mode: 'simple' | 'dev'): Promise<{ ok: boolean }> =>
+    ipcRenderer.invoke(IPC.chromeReady, mode),
   updateCheck: (): Promise<{ status: string; version?: string; percent?: number; message?: string }> =>
     ipcRenderer.invoke(IPC.updateCheck),
   updateInstall: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.updateInstall),

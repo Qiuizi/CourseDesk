@@ -49,10 +49,12 @@ export function registerIpc(ctx: IpcContext): void {
     ctx.onSettingsApplied(next);
     return next;
   });
-  handle(IPC.setMode, (mode: Settings['ui']['mode']) => {
-    const next = engine.setMode(mode);
+  handle(IPC.setMode, (mode: Settings['ui']['mode']) => engine.setMode(mode));
+
+  // 渲染层把新界面画好之后，再换原生标题栏色块，避免切换瞬间闪一下
+  handle(IPC.chromeReady, (mode: Settings['ui']['mode']) => {
     ctx.onModeChanged(mode);
-    return next;
+    return { ok: true };
   });
 
   handle(IPC.quit, () => {

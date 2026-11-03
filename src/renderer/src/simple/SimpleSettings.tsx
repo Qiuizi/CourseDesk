@@ -4,6 +4,7 @@ import { useTick } from '../lib/store';
 import { ago, hhmm } from '../lib/format';
 import { CHECKIN_HOSTS, CHECKIN_SOURCES } from '../lib/options';
 import { SBadge, SBtn, SCard, SDot, SEmpty, SField, SInput, SMeter, SRow, SSelect, SToggle } from './ui';
+import { switchMode } from '../lib/mode';
 
 const UPDATE_LABEL: Record<string, string> = {
   idle: '未检查',
@@ -383,7 +384,7 @@ export function SimpleSettings({ snap, call }: PageProps): ReactNode {
             <SField label="界面模式">
               <SSelect
                 value={s.ui.mode}
-                onChange={(v) => void call((api) => api.setMode(v as 'simple' | 'dev'))}
+                onChange={(v) => switchMode(v as 'simple' | 'dev')}
                 options={[
                   { value: 'simple', label: '普通模式（简洁）' },
                   { value: 'dev', label: '开发者模式（控制台）' },

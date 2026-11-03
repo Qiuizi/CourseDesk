@@ -5,6 +5,7 @@ import { useTick } from '../lib/store';
 import { hhmmss } from '../lib/format';
 import { SCard, SDot } from './ui';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { switchMode } from '../lib/mode';
 import { Today } from './Today';
 import { SimpleYuketang } from './SimpleYuketang';
 import { SimpleChaoxing } from './SimpleChaoxing';
@@ -100,7 +101,7 @@ export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): 
             学习通
           </button>
         </div>
-        <ModeSwitch mode={snap.settings.ui.mode} onChange={(m) => void call((api) => api.setMode(m))} />
+        <ModeSwitch mode={snap.settings.ui.mode} onChange={switchMode} />
         <span className="s-conn__item" style={{ fontVariantNumeric: 'tabular-nums' }}>
           {hhmmss(now)}
         </span>
