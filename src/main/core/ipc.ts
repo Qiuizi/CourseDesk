@@ -3,7 +3,7 @@
  * 渲染进程只能通过这里定义的通道调用，没有 node 权限。
  */
 
-import { app, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { IPC } from '@shared/ipc';
 import type { AppSnapshot, Settings } from '@shared/types';
 import type { Engine } from './engine';
@@ -54,6 +54,22 @@ export function registerIpc(ctx: IpcContext): void {
   // 渲染层把新界面画好之后，再换原生标题栏色块，避免切换瞬间闪一下
   handle(IPC.chromeReady, (mode: Settings['ui']['mode']) => {
     ctx.onModeChanged(mode);
+    return { ok: true };
+  });
+
+  ipcMain.handle(IPC.winMinimize, (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize();
+    return { ok: true };
+  });
+  ipcMain.handle(IPC.winToggleMax, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return { ok: false };
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+    return { ok: true };
+  });
+  ipcMain.handle(IPC.winClose, (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close();
     return { ok: true };
   });
 

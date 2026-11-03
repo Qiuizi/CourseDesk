@@ -45,6 +45,9 @@ const api = {
   quit: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.quit),
   chromeReady: (mode: 'simple' | 'dev'): Promise<{ ok: boolean }> =>
     ipcRenderer.invoke(IPC.chromeReady, mode),
+  minimize: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.winMinimize),
+  toggleMaximize: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.winToggleMax),
+  closeWindow: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.winClose),
   updateCheck: (): Promise<{ status: string; version?: string; percent?: number; message?: string }> =>
     ipcRenderer.invoke(IPC.updateCheck),
   updateInstall: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.updateInstall),

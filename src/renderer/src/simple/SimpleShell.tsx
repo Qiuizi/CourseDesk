@@ -5,6 +5,7 @@ import { useTick } from '../lib/store';
 import { hhmmss } from '../lib/format';
 import { SCard, SDot } from './ui';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { WindowControls } from '../components/WindowControls';
 import { switchMode } from '../lib/mode';
 import { Today } from './Today';
 import { SimpleYuketang } from './SimpleYuketang';
@@ -105,6 +106,7 @@ export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): 
         <span className="s-conn__item" style={{ fontVariantNumeric: 'tabular-nums' }}>
           {hhmmss(now)}
         </span>
+        <WindowControls />
       </header>
       <main className="s-main">{page}</main>
     </div>

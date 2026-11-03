@@ -87,16 +87,6 @@ function applyTheme(mode: 'simple' | 'dev'): void {
   appliedTheme = mode;
   const dark = mode === 'dev';
   mainWindow.setBackgroundColor(dark ? '#0a0d0b' : '#f5f7f4');
-  try {
-    mainWindow.setTitleBarOverlay({
-      color: dark ? '#0a0d0b' : '#ffffff',
-      symbolColor: dark ? '#9ae66e' : '#141a16',
-      // 和顶栏同高，最小化 / 最大化 / 关闭 三个按钮才会和文字对齐
-      height: dark ? 40 : 58,
-    });
-  } catch {
-    /* Linux 等平台不支持 overlay */
-  }
 }
 
 function createMainWindow(): void {
@@ -116,11 +106,8 @@ function createMainWindow(): void {
     title: APP_NAME,
     icon: resourcePath('icon.png'),
     titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: (engine?.snapshot().settings.ui.mode ?? 'simple') === 'dev' ? '#0a0d0b' : '#ffffff',
-      symbolColor: (engine?.snapshot().settings.ui.mode ?? 'simple') === 'dev' ? '#9ae66e' : '#141a16',
-      height: 40,
-    },
+    // 不用系统 caption：右上角三个按钮由渲染层自绘，切主题不会闪
+    titleBarOverlay: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

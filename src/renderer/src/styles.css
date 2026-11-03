@@ -126,7 +126,7 @@ body::after {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 168px 0 22px;
+  padding: 0 104px 0 22px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(180deg, rgba(154, 230, 110, 0.05), transparent);
   -webkit-app-region: drag;
@@ -1256,15 +1256,18 @@ body.is-compact .stat__value {
 .mode-switch button {
   position: relative;
   z-index: 1;
+  flex: 1 1 0;
   border: 0;
   background: none;
   color: var(--dim);
   font-family: inherit;
   font-size: 11.5px;
   letter-spacing: 0.02em;
-  padding: 4px 11px;
+  padding: 4px 12px;
   border-radius: 999px;
   cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
   transition: color 0.18s ease;
 }
 .mode-switch button.is-on { color: var(--ink); }
@@ -1300,4 +1303,68 @@ body.is-hidden *::after {
 .mode-veil.is-in {
   opacity: 1;
   transition: opacity 0.1s ease;
+}
+
+/* 自绘窗口按钮：三个小圆点，悬停才出现符号 */
+.win-ctl {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 4px;
+  -webkit-app-region: no-drag;
+}
+.win-ctl__dot {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+  color: #cfe0d2;
+  transition: transform 0.12s ease, background 0.16s ease, color 0.16s ease;
+}
+.win-ctl__dot span {
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(0.5px);
+  transition: opacity 0.12s ease;
+}
+.win-ctl__dot:hover { transform: scale(1.14); }
+.win-ctl__dot:hover span { opacity: 1; }
+.win-ctl__dot--min { background: rgba(255, 184, 77, 0.2); color: #ffcf8a; }
+.win-ctl__dot--max { background: rgba(154, 230, 110, 0.16); color: #b7ef9a; }
+.win-ctl__dot--close { background: rgba(255, 111, 97, 0.22); color: #ffb3ad; }
+
+/* 过场遮罩里的提示 */
+.mode-veil {
+  display: grid;
+  place-items: center;
+}
+.mode-veil__inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: #5c6b62;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.mode-veil.is-in .mode-veil__inner { opacity: 1; transform: none; }
+.mode-veil--dev .mode-veil__inner { color: #9ae66e; }
+.mode-veil__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: veil-pulse 1s ease-in-out infinite;
+}
+@keyframes veil-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
 }

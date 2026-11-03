@@ -39,7 +39,7 @@ export default function App(): ReactNode {
       setVeil({ mode: next, phase: 'in' });
       // 兜底：切换失败也别一直盖着
       timers.current.push(
-        window.setTimeout(() => setVeil((v) => (v ? { ...v, phase: 'out' } : v)), 1500),
+        window.setTimeout(() => setVeil((v) => (v ? { ...v, phase: 'out' } : v)), 2000),
       );
     };
     window.addEventListener('coursedesk:switch-mode', onSwitch);
@@ -56,7 +56,7 @@ export default function App(): ReactNode {
       void window.coursedesk?.chromeReady?.(mode);
       setVeil((v) => (v ? { ...v, phase: 'out' } : v));
       timers.current.push(window.setTimeout(() => setVeil(null), 260));
-    }, 90);
+    }, 140);
     timers.current.push(timer);
     return () => window.clearTimeout(timer);
   }, [mode, veil]);
@@ -77,7 +77,12 @@ export default function App(): ReactNode {
           className={`mode-veil is-${veil.phase}`}
           style={{ background: veil.mode === 'dev' ? '#0a0d0b' : '#f7f9f6' }}
           aria-hidden
-        />
+        >
+          <div className="mode-veil__inner">
+            <span className="mode-veil__dot" />
+            {veil.mode === 'dev' ? '切换到开发者模式…' : '回到普通模式…'}
+          </div>
+        </div>
       )}
     </>
   );

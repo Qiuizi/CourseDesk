@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Lamp, Pill } from './ui';
 import { ModeSwitch } from './ModeSwitch';
+import { WindowControls } from './WindowControls';
 import { useTick } from '../lib/store';
 import type { AppSnapshot } from '@shared/types';
 import { hhmmss } from '../lib/format';
@@ -39,6 +40,7 @@ export function TitleBar({
       </button>
       <ModeSwitch mode={snap.settings.ui.mode} onChange={onSetMode} />
       <div className="titlebar__clock">{hhmmss(now)}</div>
+      <WindowControls />
     </div>
   );
 }

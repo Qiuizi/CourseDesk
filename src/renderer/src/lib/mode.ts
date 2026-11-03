@@ -12,5 +12,5 @@ export function switchMode(mode: UiMode): void {
   window.setTimeout(() => {
     const api = window.coursedesk;
     if (api) void api.setMode(mode);
-  }, 120);
+  }, 150);
 }
