@@ -28,6 +28,7 @@ import type {
   PlatformId,
   Problem,
   Settings,
+  UpdateState,
   SignRecord,
 } from '@shared/types';
 
@@ -56,6 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notify: { system: true, sound: false },
   ui: { accent: 'lime', density: 'comfortable', mode: 'simple' },
   drift: { enabled: true, intervalHours: 6, notify: true },
+  behavior: { closeToTray: true, launchAtLogin: false, notifyWhenHidden: true },
   startMinimized: false,
 };
 
@@ -134,6 +136,7 @@ export class Engine {
         unknownOps: {},
         hasDrift: false,
       },
+      update: { status: 'idle' },
       busy: {},
     };
   }
@@ -436,6 +439,21 @@ export class Engine {
       evt(now - 40_000, 'yuketang', 'problem', 'info', '解锁新题目：单选', 'p-77120 · 限时 120s'),
       evt(now - 20_000, 'yuketang', 'problem', 'info', '解锁新题目：多选', 'p-77121 · 限时 90s'),
     ];
+  }
+
+  /** 自动更新状态：由 updater 写，快照推给两个界面 */
+  setUpdate(state: UpdateState): void {
+    this.snap.update = { ...this.snap.update, ...state, checkedAt: state.checkedAt ?? this.snap.update.checkedAt };
+    this.pushSoon();
+  }
+
+  /** 切换普通 / 开发者界面：原子更新，避免渲染层拼一个可能过期的对象 */
+  setMode(mode: Settings['ui']['mode']): Settings {
+    this.snap.settings.ui = { ...this.snap.settings.ui, mode };
+    this.pushSoon();
+    void this.persist();
+    log.info('engine', `界面模式切换为 ${mode}`);
+    return this.snap.settings;
   }
 
   async shutdown(): Promise<void> {

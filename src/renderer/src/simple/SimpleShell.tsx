@@ -105,7 +105,7 @@ export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): 
           </button>
           <button
             type="button"
-            onClick={() => void call((api) => api.updateSettings({ ui: { ...snap.settings.ui, mode: 'dev' } }))}
+            onClick={() => void call((api) => api.setMode('dev'))}
           >
             开发者
           </button>

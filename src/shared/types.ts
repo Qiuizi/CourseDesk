@@ -232,6 +232,26 @@ export interface DriftState {
   hasDrift: boolean;
 }
 
+/** 自动更新状态（主进程 → 渲染进程） */
+export interface UpdateState {
+  status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'none' | 'error' | 'unsupported';
+  /** 远端版本号 */
+  version?: string;
+  /** 下载进度 0-100 */
+  percent?: number;
+  message?: string;
+  checkedAt?: number;
+}
+
+export interface BehaviorSettings {
+  /** 点关闭时缩到托盘继续跑（而不是退出） */
+  closeToTray: boolean;
+  /** 开机自启 */
+  launchAtLogin: boolean;
+  /** 窗口在后台时也弹系统通知 */
+  notifyWhenHidden: boolean;
+}
+
 export interface Settings {
   yuketang: YuketangSettings;
   chaoxing: ChaoxingSettings;
@@ -241,6 +261,8 @@ export interface Settings {
   ui: { accent: 'lime' | 'amber' | 'cyan'; density: 'comfortable' | 'compact'; mode: 'simple' | 'dev' };
   /** 接口变更检测 */
   drift: { enabled: boolean; intervalHours: number; notify: boolean };
+  /** 关闭 / 自启 / 后台通知 */
+  behavior: BehaviorSettings;
   startMinimized: boolean;
 }
 
@@ -303,6 +325,8 @@ export interface AppSnapshot {
   events: ClassEvent[];
   health: { yuketang: HealthReport; chaoxing: HealthReport };
   drift: DriftState;
+  /** 自动更新 */
+  update: UpdateState;
   busy: Record<string, boolean>;
 }
 

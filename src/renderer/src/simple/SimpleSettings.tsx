@@ -3,7 +3,18 @@ import type { PageProps } from '../lib/store';
 import { useTick } from '../lib/store';
 import { ago, hhmm } from '../lib/format';
 import { CHECKIN_HOSTS, CHECKIN_SOURCES } from '../lib/options';
-import { SBadge, SBtn, SCard, SDot, SEmpty, SField, SInput, SRow, SSelect, SToggle } from './ui';
+import { SBadge, SBtn, SCard, SDot, SEmpty, SField, SInput, SMeter, SRow, SSelect, SToggle } from './ui';
+
+const UPDATE_LABEL: Record<string, string> = {
+  idle: '未检查',
+  checking: '检查中',
+  available: '发现新版本',
+  downloading: '下载中',
+  downloaded: '可安装',
+  none: '已是最新',
+  error: '检查失败',
+  unsupported: '不支持',
+};
 
 export function SimpleSettings({ snap, call }: PageProps): ReactNode {
   const s = snap.settings;
@@ -280,6 +291,57 @@ export function SimpleSettings({ snap, call }: PageProps): ReactNode {
             </div>
           </SCard>
 
+          <SCard
+            title="更新"
+            hint={snap.version ? `当前 v${snap.version}` : undefined}
+            actions={
+              <SBadge
+                tone={
+                  snap.update.status === 'error'
+                    ? 'err'
+                    : snap.update.status === 'downloaded'
+                      ? 'ok'
+                      : snap.update.status === 'checking' || snap.update.status === 'downloading'
+                        ? 'info'
+                        : 'idle'
+                }
+              >
+                {UPDATE_LABEL[snap.update.status] ?? snap.update.status}
+              </SBadge>
+            }
+          >
+            <SRow
+              title={snap.update.version ? `新版本 ${snap.update.version}` : '自动更新'}
+              sub={
+                snap.update.status === 'downloading'
+                  ? `正在下载 ${snap.update.percent ?? 0}%`
+                  : (snap.update.message ?? '启动 12 秒后自动检查，之后每 4 小时一次')
+              }
+            />
+            {snap.update.status === 'downloading' && <SMeter value={snap.update.percent ?? 0} />}
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <SBtn
+                size="sm"
+                variant="primary"
+                busy={snap.update.status === 'checking'}
+                onClick={async () => {
+                  const r = await call((api) => api.updateCheck());
+                  setNote(r?.status === 'none' ? '已经是最新版本' : (r?.message ?? '已开始检查'));
+                }}
+              >
+                检查更新
+              </SBtn>
+              {snap.update.status === 'downloaded' && (
+                <SBtn size="sm" variant="soft" onClick={() => void call((api) => api.updateInstall())}>
+                  重启并安装
+                </SBtn>
+              )}
+              <span style={{ alignSelf: 'center', fontSize: 12.5, color: 'var(--s-dim-2)' }}>
+                安装版自动更新 · 便携版请到 Releases 手动下载
+              </span>
+            </div>
+          </SCard>
+
           <SCard title="通知与界面">
             <SToggle
               checked={s.notify.system}
@@ -288,10 +350,40 @@ export function SimpleSettings({ snap, call }: PageProps): ReactNode {
               hint="开课、签到、接口变化"
             />
             <SToggle checked={s.notify.sound} onChange={(v) => patch({ notify: { ...s.notify, sound: v } })} label="通知声音" />
+            <SToggle
+              checked={s.behavior.notifyWhenHidden}
+              onChange={(v) => patch({ behavior: { ...s.behavior, notifyWhenHidden: v } })}
+              label="后台时也提醒"
+              hint="窗口收进托盘、正在上课时仍然弹通知"
+            />
+            <SToggle
+              checked={s.behavior.closeToTray}
+              onChange={(v) => patch({ behavior: { ...s.behavior, closeToTray: v } })}
+              label="关闭窗口后继续在后台运行"
+              hint="点 × 收进托盘而不是退出；退出请用托盘菜单"
+            />
+            <SToggle
+              checked={s.behavior.launchAtLogin}
+              onChange={(v) => patch({ behavior: { ...s.behavior, launchAtLogin: v } })}
+              label="开机自启"
+              hint="登录 Windows 后自动启动并常驻托盘"
+            />
+            <div style={{ marginTop: 6 }}>
+              <SBtn
+                size="sm"
+                variant="ghost"
+                onClick={async () => {
+                  const r = await call((api) => api.notifyTest());
+                  setNote(r?.message ?? '已发送');
+                }}
+              >
+                发一条测试通知
+              </SBtn>
+            </div>
             <SField label="界面模式">
               <SSelect
                 value={s.ui.mode}
-                onChange={(v) => patch({ ui: { ...s.ui, mode: v as 'simple' | 'dev' } })}
+                onChange={(v) => void call((api) => api.setMode(v as 'simple' | 'dev'))}
                 options={[
                   { value: 'simple', label: '普通模式（简洁）' },
                   { value: 'dev', label: '开发者模式（控制台）' },

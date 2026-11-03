@@ -5,7 +5,8 @@ import { Engine } from './core/engine';
 import { registerIpc } from './core/ipc';
 import { log } from './core/log';
 import { closeAllBrowserWindows, openBrowserWindow } from './core/login';
-import { setNotificationClickHandler } from './core/notify';
+import { configureNotificationPolicy, initNotifications, notify, setNotificationClickHandler } from './core/notify';
+import { startUpdater, type UpdaterHandle } from './core/updater';
 import { PARTITION } from './core/net';
 import type { AppSnapshot } from '@shared/types';
 
@@ -15,9 +16,17 @@ const version = app.getVersion();
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let engine: Engine | null = null;
+let updater: UpdaterHandle | null = null;
 let quitting = false;
+let quittingToastShown = false;
 
 app.setName(APP_NAME);
+
+// 自检 / 探针：用独立的 userData 目录并跳过单实例锁，避免和用户正在跑的实例打架
+const ISOLATED = process.env['COURSEDESK_ISOLATED'] === '1';
+if (ISOLATED) {
+  app.setPath('userData', join(app.getPath('temp'), `coursedesk-probe-${process.pid}`));
+}
 
 function resourcePath(file: string): string {
   return app.isPackaged
@@ -69,10 +78,23 @@ function createMainWindow(): void {
   });
 
   mainWindow.on('close', (event) => {
-    if (!quitting) {
-      event.preventDefault();
-      mainWindow?.hide();
-      log.info('app', '主窗口已隐藏到托盘（托盘菜单可退出）');
+    if (quitting) return;
+    const closeToTray = engine?.snapshot().settings.behavior.closeToTray ?? true;
+    if (!closeToTray) {
+      // 用户在设置里关掉了「关闭到托盘」：直接退出
+      quitting = true;
+      return;
+    }
+    event.preventDefault();
+    mainWindow?.hide();
+    log.info('app', '主窗口已隐藏到托盘（托盘菜单可退出）');
+    if (!quittingToastShown) {
+      quittingToastShown = true;
+      notify({
+        title: 'CourseDesk 还在后台',
+        body: '窗口已收到托盘，开课 / 签到提醒照常推送；要退出请用托盘菜单。',
+        silent: true,
+      });
     }
   });
 
@@ -99,6 +121,15 @@ function showWindow(): void {
   mainWindow.focus();
 }
 
+/** 开机自启由系统设置决定，改设置后立刻生效 */
+function applyBehavior(settings: AppSnapshot['settings']): void {
+  try {
+    app.setLoginItemSettings({ openAtLogin: settings.behavior.launchAtLogin, args: ['--hidden'] });
+  } catch (err) {
+    log.warn('app', '设置开机自启失败', String(err));
+  }
+}
+
 function buildTray(): void {
   try {
     tray = new Tray(nativeImage.createFromPath(resourcePath('tray.png')));
@@ -111,6 +142,10 @@ function buildTray(): void {
         {
           label: '重新探测登录态',
           click: () => void engine?.probeAll(true),
+        },
+        {
+          label: '检查更新',
+          click: () => void updater?.check(true),
         },
         {
           label: '立即刷新双平台',
@@ -162,7 +197,7 @@ async function maybeScreenshot(): Promise<void> {
   }, delay);
 }
 
-const gotLock = app.requestSingleInstanceLock();
+const gotLock = ISOLATED ? true : app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
@@ -171,6 +206,7 @@ if (!gotLock) {
   app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
 
+    initNotifications();
     engine = new Engine(push);
     engine.browserWindowOpener = async (url, title) => {
       await openBrowserWindow(url, title);
@@ -178,7 +214,24 @@ if (!gotLock) {
     await engine.init(version);
 
     setNotificationClickHandler(() => showWindow());
-    registerIpc({ engine, push, version });
+    updater = startUpdater(
+      (state) => engine?.setUpdate(state),
+      (kind, state) => {
+        if (!engine?.snapshot().settings.notify.system) return;
+        if (kind === 'available') {
+          notify({ title: `发现新版本 ${state.version}`, body: '正在后台下载，完成后可以从设置里重启安装。' });
+        }
+        if (kind === 'downloaded') {
+          notify({ title: `新版本 ${state.version} 已就绪`, body: '打开设置 → 更新 → 重启安装即可。' });
+        }
+      },
+    );
+    configureNotificationPolicy({
+      isHidden: () => !mainWindow?.isVisible(),
+      allowWhenHidden: () => engine?.snapshot().settings.behavior.notifyWhenHidden ?? true,
+    });
+    applyBehavior(engine.snapshot().settings);
+    registerIpc({ engine, push, version, updater, onSettingsApplied: applyBehavior });
     createMainWindow();
     buildTray();
 

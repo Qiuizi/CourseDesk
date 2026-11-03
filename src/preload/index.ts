@@ -41,6 +41,12 @@ const api = {
   aiTest: (): Promise<{ ok: boolean; detail: string }> => ipcRenderer.invoke(IPC.aiTest),
   aiKeySet: (key: string): Promise<{ ok: boolean; hasKey: boolean }> => ipcRenderer.invoke(IPC.aiKeySet, key),
 
+  setMode: (mode: 'simple' | 'dev'): Promise<Settings> => ipcRenderer.invoke(IPC.setMode, mode),
+  updateCheck: (): Promise<{ status: string; version?: string; percent?: number; message?: string }> =>
+    ipcRenderer.invoke(IPC.updateCheck),
+  updateInstall: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.updateInstall),
+  notifyTest: (): Promise<{ ok: boolean; message: string }> => ipcRenderer.invoke(IPC.notifyTest),
+
   driftCheck: (): Promise<{ ok: boolean; changed: number; checked: number }> =>
     ipcRenderer.invoke(IPC.driftCheck),
   driftAccept: (probeId?: string): Promise<{ ok: boolean; updated: number }> =>

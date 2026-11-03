@@ -44,12 +44,14 @@ state.settings.ui = { ...(state.settings.ui ?? {}), mode };
 await mkdir(dirname(statePath), { recursive: true });
 await writeFile(statePath, JSON.stringify(state, null, 2), 'utf8');
 
-const child = spawn(exe, ['.', `--remote-debugging-port=${port}`], {
+const customExe = arg('exe', '');
+const child = spawn(customExe || exe, customExe ? [`--remote-debugging-port=${port}`] : ['.', `--remote-debugging-port=${port}`], {
   cwd: root,
   env: {
     ...process.env,
     COURSEDESK_TAB: tab,
     COURSEDESK_WINDOW: `${width}x${height}`,
+    COURSEDESK_ISOLATED: '1',
     ...(demo ? { COURSEDESK_DEMO: '1' } : {}),
   },
   stdio: ['ignore', 'pipe', 'pipe'],

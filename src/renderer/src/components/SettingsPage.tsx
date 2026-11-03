@@ -297,6 +297,67 @@ export function SettingsPage({ snap, call }: PageProps): ReactNode {
         </Panel>
       </div>
 
+      <Panel eyebrow="UPDATE / BACKGROUND" title="更新与后台" meta={`当前 v${snap.version}`}>
+        <div className="inline" style={{ marginBottom: 10 }}>
+          <Pill
+            tone={
+              snap.update.status === 'error'
+                ? 'err'
+                : snap.update.status === 'downloaded'
+                  ? 'ok'
+                  : snap.update.status === 'checking' || snap.update.status === 'downloading'
+                    ? 'info'
+                    : 'idle'
+            }
+            mono
+          >
+            {snap.update.status.toUpperCase()}
+          </Pill>
+          <span className="small dim">
+            {snap.update.status === 'downloading'
+              ? `下载中 ${snap.update.percent ?? 0}%`
+              : (snap.update.message ?? (snap.update.version ? `新版本 ${snap.update.version}` : '启动 12 秒后自动检查，之后每 4 小时一次'))}
+          </span>
+        </div>
+        <div className="inline">
+          <Btn
+            size="sm"
+            variant="primary"
+            busy={snap.update.status === 'checking'}
+            onClick={() => void call((api) => api.updateCheck())}
+          >
+            检查更新
+          </Btn>
+          {snap.update.status === 'downloaded' && (
+            <Btn size="sm" variant="primary" onClick={() => void call((api) => api.updateInstall())}>
+              重启并安装
+            </Btn>
+          )}
+          <Btn size="sm" variant="ghost" onClick={() => void call((api) => api.notifyTest())}>
+            测试通知
+          </Btn>
+          <span className="tiny dim2">便携版不支持自动更新，请到 Releases 下载新版</span>
+        </div>
+        <div className="divider" />
+        <Toggle
+          checked={snap.settings.behavior.closeToTray}
+          onChange={(v) => void call((api) => api.updateSettings({ behavior: { ...snap.settings.behavior, closeToTray: v } }))}
+          label="关闭窗口后驻留托盘"
+          hint="点 × 只是收起来，轮询和通知继续跑；退出用托盘菜单"
+        />
+        <Toggle
+          checked={snap.settings.behavior.notifyWhenHidden}
+          onChange={(v) => void call((api) => api.updateSettings({ behavior: { ...snap.settings.behavior, notifyWhenHidden: v } }))}
+          label="后台时也弹通知"
+        />
+        <Toggle
+          checked={snap.settings.behavior.launchAtLogin}
+          onChange={(v) => void call((api) => api.updateSettings({ behavior: { ...snap.settings.behavior, launchAtLogin: v } }))}
+          label="开机自启"
+          hint="登录 Windows 后自动启动，常驻托盘"
+        />
+      </Panel>
+
       <Panel eyebrow="ABOUT" title="关于与数据位置">
         <div className="grid-2" style={{ gap: 0 }}>
           <div>

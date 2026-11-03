@@ -29,6 +29,7 @@ const FALLBACK: AppSnapshot = {
     notify: { system: true, sound: false },
     ui: { accent: 'lime', density: 'comfortable', mode: 'simple' },
     drift: { enabled: true, intervalHours: 6, notify: true },
+    behavior: { closeToTray: true, launchAtLogin: false, notifyWhenHidden: true },
     startMinimized: false,
   },
   yuketang: {
@@ -51,6 +52,7 @@ const FALLBACK: AppSnapshot = {
   events: [],
   health: { yuketang: { ok: true, notes: [] }, chaoxing: { ok: true, notes: [] } },
   drift: { enabled: true, intervalHours: 6, running: false, results: [], unknownOps: {}, hasDrift: false },
+  update: { status: 'idle' },
   busy: {},
 };
 

@@ -109,7 +109,9 @@ AI 建议用虚线高亮并带 `AI` 标；主观题只出解析，永远不自�
 | 签到类型 | — | 普通 / 位置 / 手势 / 签到码自动；二维码、拍照转人工 |
 | 作业 | `mooc-api` exercise list（依赖 leafId） | `work/task-list` HTML 解析 |
 | 视频进度 | `video-log/heartbeat/` 按真实播放器事件形状上报（默认关） | — |
-| 系统通知 | 开课、新签到、提交失败（60s 去重） | 同左 |
+| 系统通知 | 开课、新签到、提交失败（60s 去重）；后台/托盘状态照常弹 Windows Toast | 同左 |
+| 后台常驻 | 关闭窗口收到托盘，轮询与提醒继续；可开机自启 | 同左 |
+| 自动更新 | GitHub Releases + electron-updater，启动 12s 后检查、之后每 4 小时；安装版一键重启安装 | 同左 |
 | 事件流 / 记录 | 两个平台统一时间线 + 主进程日志 | 同左 |
 | 接口变更检测 | 只读端点结构指纹 + 基线 diff + 未识别 WS op | 同左 |
 | 界面 | 普通 / 开发者双模式，随时切换 | 同左 |
@@ -294,6 +296,32 @@ node_modules/electron/dist/electron.exe scripts/preview.cjs -- \
 ```
 
 `scripts/preview.cjs` 会加载任意 URL、打印 console、截图后退出；`PREVIEW_SCROLL=<px>` 可截长页的某一段。
+
+## 更新与后台
+
+三个能力都走系统原生通道，不引入额外服务：
+
+### 自动更新（electron-updater + GitHub Releases）
+
+- 打包时 `publish` 指向 `Qiuizi/CourseDesk`，`npm run pack:nsis` 会同时产出 `latest.yml` 与 `app-update.yml`。
+- 启动 12 秒后查一次，之后每 4 小时一次；设置里也有「检查更新」。
+- 只有 **NSIS 安装版**能自动升级（下载完点「重启并安装」即 `quitAndInstall`）；便携版会明确提示去 Releases 下载新版。
+- 发版时把 `latest.yml`、安装包、`.blockmap` 一起传到 Release；缺 `latest.yml` 会得到一句「这次发布缺少 latest.yml」，而不是一整段堆栈。
+- 目录：`src/main/core/updater.ts`；IPC：`update:check` / `update:install`；状态在快照的 `update` 字段，两个界面都能读。
+
+### Windows 通知
+
+- 启动时 `app.setAppUserModelId('com.coursedesk.app')`（与安装包 `appId` 一致），否则 Windows 会把 Toast 归到 electron 名下或直接吞掉。
+- 开课、新签到、提交失败、接口变更、更新就绪都走 `notify()`；点 Toast 会把窗口拉回前台。
+- 设置里「发一条测试通知」可直接验证系统权限。
+
+### 关闭后继续在后台
+
+- 默认「关闭窗口后继续在后台运行」：点 × 只是 `hide()`，轮询、答题、通知都还在；首次隐藏会弹一条说明。要退出用托盘菜单。
+- 关掉这个开关后，点 × 会真的退出。
+- 「后台时也提醒」「开机自启」分别在设置里；自启走 `app.setLoginItemSettings({ openAtLogin })`，改完立刻生效。
+
+排查：通知不弹 → 看 Windows 设置里 CourseDesk 的通知权限；更新检查 404 → 确认 Release 里上传了 `latest.yml`；便携版提示不支持 → 正常，改用安装版。
 
 ## 数据与隐私
 

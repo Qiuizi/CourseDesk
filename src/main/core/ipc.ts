@@ -8,7 +8,9 @@ import { IPC } from '@shared/ipc';
 import type { AppSnapshot, Settings } from '@shared/types';
 import type { Engine } from './engine';
 import { log } from './log';
+import { notifyTest } from './notify';
 import { openBrowserWindow } from './login';
+import type { UpdaterHandle } from './updater';
 import { yt } from '../platforms/yuketang/endpoints';
 import { cx } from '../platforms/chaoxing/endpoints';
 
@@ -16,6 +18,8 @@ export interface IpcContext {
   engine: Engine;
   push: (snap: AppSnapshot) => void;
   version: string;
+  updater: UpdaterHandle | null;
+  onSettingsApplied: (settings: Settings) => void;
 }
 
 export function registerIpc(ctx: IpcContext): void {
@@ -34,8 +38,26 @@ export function registerIpc(ctx: IpcContext): void {
 
   handle(IPC.snapshot, () => engine.snapshot());
 
-  handle(IPC.settingsUpdate, (patch: Partial<Settings>) => engine.updateSettings(patch));
-  handle(IPC.settingsReset, () => engine.resetSettings());
+  handle(IPC.settingsUpdate, (patch: Partial<Settings>) => {
+    const next = engine.updateSettings(patch);
+    ctx.onSettingsApplied(next);
+    return next;
+  });
+  handle(IPC.settingsReset, () => {
+    const next = engine.resetSettings();
+    ctx.onSettingsApplied(next);
+    return next;
+  });
+  handle(IPC.setMode, (mode: Settings['ui']['mode']) => engine.setMode(mode));
+
+  handle(IPC.updateCheck, () =>
+    ctx.updater?.check(true) ?? { status: 'unsupported' as const, message: '更新模块未启动' },
+  );
+  handle(IPC.updateInstall, () => {
+    ctx.updater?.install();
+    return { ok: Boolean(ctx.updater) };
+  });
+  handle(IPC.notifyTest, () => notifyTest());
 
   handle(IPC.ytLogin, async () => {
     await engine.openYuketangHome();

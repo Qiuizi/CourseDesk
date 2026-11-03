@@ -28,6 +28,11 @@ export const IPC = {
   aiKeySet: 'ai:key-set',
   driftCheck: 'drift:check',
   driftAccept: 'drift:accept',
+
+  setMode: 'app:set-mode',
+  updateCheck: 'update:check',
+  updateInstall: 'update:install',
+  notifyTest: 'notify:test',
   logsTail: 'logs:tail',
   logsClear: 'logs:clear',
   openExternal: 'shell:open',
