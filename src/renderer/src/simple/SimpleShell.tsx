@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { AppSnapshot } from '@shared/types';
 import type { Call } from '../lib/store';
-import { useTick } from '../lib/store';
-import { hhmmss } from '../lib/format';
-import { SCard, SDot } from './ui';
+import { SDot } from './ui';
 import { ModeSwitch } from '../components/ModeSwitch';
 import { WindowControls } from '../components/WindowControls';
 import { switchMode } from '../lib/mode';
@@ -36,7 +34,6 @@ function readHash(): STab {
 
 export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): ReactNode {
   const [tab, setTab] = useState<STab>(readHash);
-  const now = useTick(1000);
   const yt = snap.yuketang;
   const cx = snap.chaoxing;
   const important = snap.events.filter((e) => e.level === 'warn' || e.level === 'error').length;
@@ -103,9 +100,6 @@ export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): 
           </button>
         </div>
         <ModeSwitch mode={snap.settings.ui.mode} onChange={switchMode} />
-        <span className="s-conn__item" style={{ fontVariantNumeric: 'tabular-nums' }}>
-          {hhmmss(now)}
-        </span>
         <WindowControls />
       </header>
       <main className="s-main">{page}</main>
@@ -113,21 +107,56 @@ export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): 
   );
 }
 
-export function SimpleSplash(): ReactNode {
+export function SimpleSplash({ ready, onDone }: { ready: boolean; onDone: () => void }): ReactNode {
+  const [pct, setPct] = useState(1);
+  const started = useRef(0);
+  const finished = useRef(false);
+
+  // 1% → 99% 的渐进：约 1.2 秒走完，之后停在 99 等主进程就绪
+  useEffect(() => {
+    started.current = performance.now();
+    const timer = window.setInterval(() => {
+      const elapsed = performance.now() - started.current;
+      const next = Math.min(99, Math.round(1 + (elapsed / 1200) * 98));
+      setPct((prev) => (next > prev ? next : prev));
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || finished.current) return;
+    const elapsed = performance.now() - started.current;
+    const waitForRamp = Math.max(0, 1250 - elapsed);
+    const toFull = window.setTimeout(() => setPct(100), waitForRamp);
+    const done = window.setTimeout(() => {
+      finished.current = true;
+      onDone();
+    }, waitForRamp + 320);
+    return () => {
+      window.clearTimeout(toFull);
+      window.clearTimeout(done);
+    };
+  }, [ready, onDone]);
+
+  const stage = pct < 35 ? '读取本地配置' : pct < 70 ? '恢复登录状态' : pct < 99 ? '准备界面' : '就绪';
+
   return (
-    <div
-      style={{
-        height: '100%',
-        display: 'grid',
-        placeItems: 'center',
-        background: '#f5f7f4',
-        color: '#141a16',
-        fontFamily: "'Segoe UI Variable Text','PingFang SC','Microsoft YaHei UI',system-ui,sans-serif",
-      }}
-    >
-      <SCard title="正在连接工作台…" hint="读取本地配置与登录状态">
-        <div style={{ fontSize: 13, color: '#6f7d75' }}>首次启动需要几秒钟</div>
-      </SCard>
+    <div className="s-splash">
+      <div className="s-splash__card">
+        <div className="s-splash__brand">
+          <span className="s-splash__mark" aria-hidden />
+          CourseDesk
+        </div>
+        <div className="s-splash__title">正在连接工作台</div>
+        <div className="s-splash__hint">配置、日志、登录态都只在本机</div>
+        <div className="s-splash__bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+          <div className="s-splash__fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="s-splash__meta">
+          <span>{stage}</span>
+          <span>{pct}%</span>
+        </div>
+      </div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ export default function App(): ReactNode {
   const { snap, ready, call } = useEngine();
   const mode = snap.settings.ui.mode;
   const [veil, setVeil] = useState<{ mode: UiMode; phase: 'in' | 'out' } | null>(null);
+  const [booted, setBooted] = useState(false);
   const timers = useRef<number[]>([]);
 
   // 收进托盘 / 切到后台时暂停所有动画，别让脉冲灯和 spinner 继续烧 GPU
@@ -61,8 +62,8 @@ export default function App(): ReactNode {
     return () => window.clearTimeout(timer);
   }, [mode, veil]);
 
-  const shell = !ready ? (
-    <SimpleSplash />
+  const shell = !ready || !booted ? (
+    <SimpleSplash ready={ready} onDone={() => setBooted(true)} />
   ) : mode === 'simple' ? (
     <SimpleShell snap={snap} call={call} />
   ) : (

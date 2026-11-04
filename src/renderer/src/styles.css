@@ -278,8 +278,18 @@ body::after {
   padding: 16px 20px 22px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 14px;
   min-height: 0;
+}
+
+/* 内容列跟普通模式一样居中，左右留白相等 */
+.main > * {
+  width: 100%;
+  max-width: 1180px;
+}
+.main > .rail {
+  max-width: 1500px;
 }
 
 /* 页脚沉底，避免内容少时页脚吊在半空 */
@@ -1315,13 +1325,13 @@ body.is-hidden *::after {
 .win-ctl {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: 8px;
+  gap: 9px;
+  margin-left: 10px;
   -webkit-app-region: no-drag;
 }
 .win-ctl__dot {
-  width: 13px;
-  height: 13px;
+  width: 17px;
+  height: 17px;
   padding: 0;
   border: 0;
   border-radius: 50%;

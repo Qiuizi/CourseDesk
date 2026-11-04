@@ -2,9 +2,7 @@ import type { ReactNode } from 'react';
 import { Lamp, Pill } from './ui';
 import { ModeSwitch } from './ModeSwitch';
 import { WindowControls } from './WindowControls';
-import { useTick } from '../lib/store';
 import type { AppSnapshot } from '@shared/types';
-import { hhmmss } from '../lib/format';
 
 export function TitleBar({
   snap,
@@ -15,7 +13,6 @@ export function TitleBar({
   onToggleMonitor: () => void;
   onSetMode: (mode: 'simple' | 'dev') => void;
 }): ReactNode {
-  const now = useTick(1000);
   const running = snap.yuketang.monitor.running || snap.chaoxing.monitor.running;
   return (
     <div className="titlebar">
@@ -39,7 +36,6 @@ export function TitleBar({
         {running ? '监控运行中' : '监控已暂停'}
       </button>
       <ModeSwitch mode={snap.settings.ui.mode} onChange={onSetMode} />
-      <div className="titlebar__clock">{hhmmss(now)}</div>
       <WindowControls />
     </div>
   );
