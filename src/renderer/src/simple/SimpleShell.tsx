@@ -3,6 +3,8 @@ import type { AppSnapshot } from '@shared/types';
 import type { Call } from '../lib/store';
 import { SDot } from './ui';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { LoadingScreen } from '../components/LoadingScreen';
+import type { UiMode } from '../lib/mode';
 import { WindowControls } from '../components/WindowControls';
 import { switchMode } from '../lib/mode';
 import { Today } from './Today';
@@ -107,7 +109,7 @@ export function SimpleShell({ snap, call }: { snap: AppSnapshot; call: Call }): 
   );
 }
 
-export function SimpleSplash({ ready, onDone }: { ready: boolean; onDone: () => void }): ReactNode {
+export function SimpleSplash({ mode, ready, onDone }: { mode: UiMode; ready: boolean; onDone: () => void }): ReactNode {
   const [pct, setPct] = useState(1);
   const started = useRef(0);
   const finished = useRef(false);
@@ -138,25 +140,5 @@ export function SimpleSplash({ ready, onDone }: { ready: boolean; onDone: () => 
     };
   }, [ready, onDone]);
 
-  const stage = pct < 35 ? '读取本地配置' : pct < 70 ? '恢复登录状态' : pct < 99 ? '准备界面' : '就绪';
-
-  return (
-    <div className="s-splash">
-      <div className="s-splash__card">
-        <div className="s-splash__brand">
-          <span className="s-splash__mark" aria-hidden />
-          CourseDesk
-        </div>
-        <div className="s-splash__title">正在连接工作台</div>
-        <div className="s-splash__hint">配置、日志、登录态都只在本机</div>
-        <div className="s-splash__bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
-          <div className="s-splash__fill" style={{ width: `${pct}%` }} />
-        </div>
-        <div className="s-splash__meta">
-          <span>{stage}</span>
-          <span>{pct}%</span>
-        </div>
-      </div>
-    </div>
-  );
+  return <LoadingScreen mode={mode} progress={pct} maximum={100} title="正在连接工作台" hint="配置、日志、登录态都只在本机" />;
 }

@@ -1312,7 +1312,7 @@ body.is-hidden *::after {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  pointer-events: none;
+  pointer-events: auto;
   opacity: 0;
   transition: opacity 0.22s ease;
 }
@@ -1344,62 +1344,101 @@ body.is-hidden *::after {
 .win-ctl__dot--min { background: #febc2e; }
 .win-ctl__dot--max { background: #28c840; }
 
-/* 过场遮罩里的提示 */
+/* Loading 卡片：启动页和模式切换共用 */
 .mode-veil {
   display: grid;
   place-items: center;
+  --loading-accent: #0b6e4f;
+  --loading-text: #182c23;
+  --loading-muted: #65756c;
+  --loading-track: rgba(11, 110, 79, 0.12);
+  background: #f7f9f6;
+  color: var(--loading-text);
 }
-.mode-veil__inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  color: #5c6b62;
+.mode-veil--dev {
+  --loading-accent: #9ae66e;
+  --loading-text: #e7f2e1;
+  --loading-muted: #98ab93;
+  --loading-track: rgba(154, 230, 110, 0.14);
+  background: #0a0d0b;
+}
+.mode-veil__card {
+  width: min(460px, calc(100vw - 64px));
+  padding: 30px 32px 26px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid rgba(20, 26, 22, 0.08);
+  box-shadow: 0 30px 70px -50px rgba(15, 26, 20, 0.5);
+  font-family: 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
   opacity: 0;
-  transform: translateY(6px) scale(0.98);
-  transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transform: translateY(10px) scale(0.985);
+  transition: opacity 0.2s ease, transform 0.24s ease;
 }
-.mode-veil.is-in .mode-veil__inner { opacity: 1; transform: none; }
-.mode-veil--dev .mode-veil__inner { color: #9ae66e; }
-.mode-veil__mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+.mode-veil--dev .mode-veil__card {
+  background: #111713;
+  border-color: rgba(154, 230, 110, 0.12);
+  box-shadow: 0 30px 80px -50px #000;
+}
+.mode-veil.is-in .mode-veil__card { opacity: 1; transform: none; }
+.mode-veil__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+/* 方块本身转圈（不是只转外圈） */
+.loading-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
   background: linear-gradient(140deg, #12906a, #0b6e4f);
-  box-shadow: 0 0 0 5px rgba(11, 110, 79, 0.1);
-  animation: veil-mark 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: loading-spin 2.2s linear infinite !important;
+  will-change: transform;
 }
-.mode-veil--dev .mode-veil__mark {
+.mode-veil--dev .loading-mark {
   background: linear-gradient(140deg, #9ae66e, #5cc06a);
-  box-shadow: 0 0 0 5px rgba(154, 230, 110, 0.12);
 }
-@keyframes veil-mark {
-  from { transform: scale(0.72) rotate(-8deg); opacity: 0; }
-  to { transform: none; opacity: 1; }
+.mode-veil__title {
+  margin-top: 24px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.mode-veil__hint {
+  margin-top: 6px;
+  color: var(--loading-muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
 .mode-veil__bar {
-  width: 96px;
-  height: 2px;
-  border-radius: 2px;
-  background: rgba(20, 26, 22, 0.08);
+  margin-top: 22px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--loading-track);
   overflow: hidden;
 }
-.mode-veil--dev .mode-veil__bar { background: rgba(255, 255, 255, 0.1); }
-.mode-veil__bar::after {
-  content: "";
+.mode-veil__bar > span {
   display: block;
-  width: 38%;
   height: 100%;
-  border-radius: 2px;
-  background: #0b6e4f;
-  animation: veil-run 0.9s ease-in-out infinite;
+  border-radius: inherit;
+  background: var(--loading-accent);
+  transition: width 0.1s linear;
 }
-.mode-veil--dev .mode-veil__bar::after { background: #9ae66e; }
-@keyframes veil-run {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(280%); }
+.mode-veil__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: var(--loading-muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  /* 保留用户指定的旋转提示，减少动态效果时放慢转速 */
+  .loading-mark { animation-duration: 6s !important; }
+  .mode-veil, .mode-veil__card, .mode-veil__bar > span { transition: none; }
 }
 
 /* 切换完成后新界面轻微放大进场，配合遮罩收尾 */

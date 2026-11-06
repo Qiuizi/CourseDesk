@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { LoadingScreen } from './components/LoadingScreen';
 import { useEngine } from './lib/store';
 import type { UiMode } from './lib/mode';
 import { DevShell } from './dev/DevShell';
@@ -17,6 +18,7 @@ export default function App(): ReactNode {
   const mode = snap.settings.ui.mode;
   const [veil, setVeil] = useState<{ mode: UiMode; phase: 'in' | 'out' } | null>(null);
   const [booted, setBooted] = useState(false);
+  const [progress, setProgress] = useState(1);
   const timers = useRef<number[]>([]);
 
   // 收进托盘 / 切到后台时暂停所有动画，别让脉冲灯和 spinner 继续烧 GPU
@@ -37,11 +39,10 @@ export default function App(): ReactNode {
     const onSwitch = (event: Event): void => {
       const next = (event as CustomEvent<UiMode>).detail;
       clearAll();
+      setProgress(1);
       setVeil({ mode: next, phase: 'in' });
-      // 兜底：切换失败也别一直盖着
-      timers.current.push(
-        window.setTimeout(() => setVeil((v) => (v ? { ...v, phase: 'out' } : v)), 2000),
-      );
+      // IPC 失败时释放遮罩，允许重试，不把失败显示成加载完成。
+      timers.current.push(window.setTimeout(() => setVeil(null), 10000));
     };
     window.addEventListener('coursedesk:switch-mode', onSwitch);
     return () => {
@@ -51,7 +52,17 @@ export default function App(): ReactNode {
   }, []);
 
   useEffect(() => {
-    if (!veil || veil.phase !== 'in' || veil.mode !== mode) return;
+    if (!veil || veil.phase !== 'in') return;
+    const started = performance.now();
+    // 这是切换动画进度；到 99% 后等待新模式实际就绪。
+    const interval = window.setInterval(() => {
+      setProgress(Math.min(99, 1 + Math.floor((performance.now() - started) / 1200 * 98)));
+    }, 40);
+    return () => window.clearInterval(interval);
+  }, [veil]);
+
+  useEffect(() => {
+    if (!veil || veil.phase !== 'in' || veil.mode !== mode || progress < 99) return;
     const timer = window.setTimeout(() => {
       // 新界面已经画好，这时才让主进程换标题栏色块
       void window.coursedesk?.chromeReady?.(mode);
@@ -60,10 +71,11 @@ export default function App(): ReactNode {
     }, 140);
     timers.current.push(timer);
     return () => window.clearTimeout(timer);
-  }, [mode, veil]);
+  }, [mode, veil, progress]);
 
+  const finishBoot = useCallback(() => setBooted(true), []);
   const shell = !ready || !booted ? (
-    <SimpleSplash ready={ready} onDone={() => setBooted(true)} />
+    <SimpleSplash mode={mode} ready={ready} onDone={finishBoot} />
   ) : mode === 'simple' ? (
     <SimpleShell snap={snap} call={call} />
   ) : (
@@ -74,17 +86,13 @@ export default function App(): ReactNode {
     <>
       {shell}
       {veil && (
-        <div
-          className={`mode-veil is-${veil.phase}`}
-          style={{ background: veil.mode === 'dev' ? '#0a0d0b' : '#f7f9f6' }}
-          aria-hidden
-        >
-          <div className="mode-veil__inner">
-            <span className="mode-veil__mark" aria-hidden />
-            <span>{veil.mode === 'dev' ? '切换到开发者模式' : '回到普通模式'}</span>
-            <span className="mode-veil__bar" aria-hidden />
-          </div>
-        </div>
+        <LoadingScreen
+          mode={veil.mode}
+          phase={veil.phase}
+          progress={progress}
+          title={`正在切换到${veil.mode === 'dev' ? '开发者' : '普通'}模式`}
+          hint="界面正在切换，数据不会中断"
+        />
       )}
     </>
   );
