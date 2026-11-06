@@ -122,8 +122,8 @@ AI 建议用虚线高亮并带 `AI` 标；主观题只出解析，永远不自�
 
 | 文件 | 体积 | 说明 |
 |---|---|---|
-| `CourseDesk-0.1.0-portable.exe` | 105 MB | 便携版，双击即用，不写注册表；拷走 exe 就能换机器 |
-| `CourseDesk-0.1.0-setup.exe` | 116 MB | NSIS 安装包，可自选目录，建桌面 / 开始菜单快捷方式 |
+| `CourseDesk-0.1.1-portable.exe` | 105 MB | 便携版，双击即用，不写注册表；拷走 exe 就能换机器 |
+| `CourseDesk-0.1.1-setup.exe` | 116 MB | NSIS 安装包，可自选目录，建桌面 / 开始菜单快捷方式 |
 | `win-unpacked/`（可选） | 约 315 MB | 免安装目录，直接跑 `CourseDesk.exe` |
 
 未配置代码签名证书，首次运行 SmartScreen 会提示"更多信息 → 仍要运行"。
@@ -145,8 +145,8 @@ npm test          # 协议层纯函数单测（17 项，含独立实现的 AES �
 打包：
 
 ```bash
-npm run pack       # 单文件便携版 → release/CourseDesk-0.1.0-portable.exe
-npm run pack:nsis  # 安装包     → release/CourseDesk-0.1.0-setup.exe
+npm run pack       # 单文件便携版 → release/CourseDesk-0.1.1-portable.exe
+npm run pack:nsis  # 安装包     → release/CourseDesk-0.1.1-setup.exe
 npm run pack:dir   # 免安装目录 → release/win-unpacked/
 ```
 

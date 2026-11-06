@@ -1,6 +1,6 @@
 {
   "name": "coursedesk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "CourseDesk — 雨课堂 × 学习通 双平台本地课程工作台（自用测试）",
   "main": "./out/main/index.js",
