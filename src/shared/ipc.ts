@@ -14,7 +14,12 @@ export const IPC = {
   ytAnswer: 'yt:answer',
   ytAskAi: 'yt:ask-ai',
   ytWatchHomework: 'yt:watch-homework',
-  ytVideoPush: 'yt:video-push',
+  ytVideoStart: 'yt:video-start',
+  ytVideoPause: 'yt:video-pause',
+  ytVideoResume: 'yt:video-resume',
+  ytVideoStop: 'yt:video-stop',
+  ytVideoSkip: 'yt:video-skip',
+  ytVideoSpeed: 'yt:video-speed',
 
   cxLogin: 'cx:login',
   cxLoginWindow: 'cx:login-window',

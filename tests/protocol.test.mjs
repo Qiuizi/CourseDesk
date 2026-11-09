@@ -16,11 +16,17 @@ import {
   normalizeProblem,
 } from '../src/main/platforms/yuketang/normalize.ts';
 import {
-  buildHeartbeatEvents,
   dedupeEvents,
   deepMerge,
   parseAnswerArray,
 } from '../src/main/core/pure.ts';
+import {
+  buildHeartbeatBatch,
+  createCursor,
+  estimateRemainingSec,
+  parsePresentationIds,
+  tickDelay,
+} from '../src/main/core/videofarm.ts';
 
 /* ------------------------------------------------------------ 学习通登录加密 */
 
@@ -135,30 +141,131 @@ test('inferBlankCount 按下划线/空括号估算空数', () => {
 
 /* ------------------------------------------------------------ 视频心跳 */
 
-test('buildHeartbeatEvents 生成完整播放器事件序列', () => {
-  const events = buildHeartbeatEvents(
-    [{ videoId: 'v1', duration: 60, presentationId: 'p1', slideIndex: 0 }],
-    'u1',
-    15,
+/** 固定时钟：所有时间断言都相对它，避免受本机时间影响 */
+const AT = Date.UTC(2025, 0, 1, 8, 0, 0);
+
+test('buildHeartbeatBatch 首批：开播状态事件 + 边界心跳，cp 单调', () => {
+  const cursor = createCursor('v1', AT);
+  const batch = buildHeartbeatBatch(
+    { videoId: 'v1', duration: 60 },
+    cursor,
+    { userId: 'u1', at: AT, elapsedSec: 10, speed: 2 },
   );
-  // 6 条状态事件 + 3 条 interval 心跳（15/30/45）+ 1 条片尾
-  assert.equal(events.length, 10);
-  assert.equal(events[0].et, 'loadstart');
-  assert.equal(events[0].i, 20);
-  assert.equal(events[0].p, 'web');
-  assert.equal(events[0].u, 'u1');
-  assert.equal(events.at(-1).cp, 60, '最后一条应到片尾');
-  const cps = events.map((e) => e.cp);
+  // 2× × 10s = 推进 20s：4 条开播事件 + 15s + 20s
+  assert.equal(batch.events.length, 6);
+  assert.equal(batch.events[0].et, 'loadstart');
+  assert.equal(batch.events[0].i, 20);
+  assert.equal(batch.events[0].p, 'web');
+  assert.equal(batch.events[0].u, 'u1');
+  assert.equal(batch.events[0].pg, cursor.session);
+  assert.equal(batch.cursor.position, 20);
+  assert.equal(batch.done, false);
+  assert.equal(batch.advanced, 20);
+  const cps = batch.events.map((e) => e.cp);
   assert.deepEqual(cps, [...cps].sort((a, b) => a - b), 'cp 必须单调不减');
+  assert.ok(
+    batch.events.every((e) => e.ts <= AT),
+    'ts 不得指向未来',
+  );
+  const tss = batch.events.map((e) => e.ts);
+  assert.deepEqual(tss, [...tss].sort((a, b) => a - b), 'ts 必须单调不减');
 });
 
-test('buildHeartbeatEvents 时长缺失时回落到 600s', () => {
-  const events = buildHeartbeatEvents(
-    [{ videoId: 'v2', duration: 0, presentationId: 'p2', slideIndex: 1 }],
-    'u2',
-    30,
+test('buildHeartbeatBatch 续跑：不回到 0，序号继续', () => {
+  const cursor = { position: 20, seq: 6, session: 'v1_1' };
+  const batch = buildHeartbeatBatch(
+    { videoId: 'v1', duration: 60 },
+    cursor,
+    { userId: 'u1', at: AT, elapsedSec: 10, speed: 1 },
   );
-  assert.equal(events.at(-1).cp, 600);
+  assert.equal(batch.events[0].et, 'heartbeat', '续跑不应重发 loadstart');
+  assert.ok(batch.events[0].cp >= 20);
+  assert.ok(batch.events.every((e) => e.cp >= 20));
+  assert.equal(batch.events[0].n, 6);
+  assert.equal(batch.cursor.position, 30);
+});
+
+test('buildHeartbeatBatch 到片尾即 done，且 cp 恰好等于时长', () => {
+  const batch = buildHeartbeatBatch(
+    { videoId: 'v3', duration: 60 },
+    { position: 55, seq: 9, session: 'v3_1' },
+    { userId: 'u3', at: AT, elapsedSec: 10, speed: 2 },
+  );
+  assert.equal(batch.done, true);
+  assert.equal(batch.cursor.position, 60);
+  assert.equal(batch.events.at(-1).cp, 60);
+});
+
+test('buildHeartbeatBatch 单批上限生效，剩余留给下一批', () => {
+  const batch = buildHeartbeatBatch(
+    { videoId: 'v4', duration: 3600 },
+    createCursor('v4', AT),
+    { userId: 'u4', at: AT, elapsedSec: 120, speed: 8, batchMax: 10 },
+  );
+  assert.equal(batch.events.length, 10);
+  assert.ok(batch.cursor.position < 960, '被截断时游标只推进到本批最后一条');
+  assert.ok(batch.cursor.position > 0);
+});
+
+test('buildHeartbeatBatch 时长缺失回落到 600s', () => {
+  const batch = buildHeartbeatBatch(
+    { videoId: 'v5', duration: 0 },
+    createCursor('v5', AT),
+    { userId: 'u5', at: AT, elapsedSec: 10, speed: 1 },
+  );
+  assert.equal(batch.cursor.position, 10);
+  const last = buildHeartbeatBatch(
+    { videoId: 'v5', duration: 0 },
+    { position: 595, seq: 40, session: 'v5_1' },
+    { userId: 'u5', at: AT, elapsedSec: 10, speed: 1 },
+  );
+  assert.equal(last.done, true);
+  assert.equal(last.events.at(-1).cp, 600);
+});
+
+test('连续 tick 覆盖整段视频，cp 不回退也不跳空', () => {
+  let cursor = createCursor('v6', AT);
+  const all = [];
+  let at = AT;
+  for (let i = 0; i < 10; i += 1) {
+    const batch = buildHeartbeatBatch(
+      { videoId: 'v6', duration: 60 },
+      cursor,
+      { userId: 'u6', at, elapsedSec: 10, speed: 2 },
+    );
+    all.push(...batch.events);
+    cursor = batch.cursor;
+    if (batch.done) break;
+    at += 10_000;
+  }
+  assert.equal(cursor.position, 60);
+  assert.equal(cursor.seq, all.length);
+  const cps = all.map((e) => e.cp);
+  assert.deepEqual(cps, [...cps].sort((a, b) => a - b));
+  assert.equal(cps.at(-1), 60);
+  // 相邻心跳的媒体间隔不超过 15s
+  const beats = all.filter((e) => e.et === 'heartbeat').map((e) => e.cp);
+  for (let i = 1; i < beats.length; i += 1) {
+    assert.ok(beats[i] - beats[i - 1] <= 15, `心跳间隔过大：${beats[i - 1]} → ${beats[i]}`);
+  }
+});
+
+test('estimateRemainingSec 按倍速折算', () => {
+  assert.equal(estimateRemainingSec(600, 0, 1), 600);
+  assert.equal(estimateRemainingSec(600, 0, 2), 300);
+  assert.equal(estimateRemainingSec(600, 500, 4), 25);
+});
+
+test('tickDelay 带 ±15% 抖动且有下限', () => {
+  assert.equal(tickDelay(10, () => 0), 8500);
+  assert.equal(tickDelay(10, () => 1), 11500);
+  assert.equal(tickDelay(1, () => 0), 2550);
+});
+
+test('parsePresentationIds 支持多种分隔符并去重', () => {
+  assert.deepEqual(parsePresentationIds('a1, b2\nc3，a1、d4；e5'), ['a1', 'b2', 'c3', 'd4', 'e5']);
+  assert.deepEqual(parsePresentationIds(['p1', 'p1', ' p2 ']), ['p1', 'p2']);
+  assert.deepEqual(parsePresentationIds('   '), []);
 });
 
 /* ------------------------------------------------------------ 事件去重 */

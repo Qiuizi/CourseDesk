@@ -14,7 +14,7 @@
   <img alt="last commit" src="https://img.shields.io/github/last-commit/Qiuizi/CourseDesk?style=flat-square&color=6b7280" />
   <img alt="electron" src="https://img.shields.io/badge/Electron-45-47848f?style=flat-square&logo=electron&logoColor=white" />
   <img alt="license" src="https://img.shields.io/badge/license-MIT-0b6e4f?style=flat-square" />
-  <img alt="tests" src="https://img.shields.io/badge/tests-17%20passing-17a673?style=flat-square" />
+  <img alt="tests" src="https://img.shields.io/badge/tests-36%20passing-17a673?style=flat-square" />
 </p>
 
 <p>
@@ -108,7 +108,7 @@ AI 建议用虚线高亮并带 `AI` 标；主观题只出解析，永远不自�
 | AI 作答 | OpenAI 兼容接口；`off / confirm / auto` 三档；主观题只出解析 | — |
 | 签到类型 | — | 普通 / 位置 / 手势 / 签到码自动；二维码、拍照转人工 |
 | 作业 | `mooc-api` exercise list（依赖 leafId） | `work/task-list` HTML 解析 |
-| 视频进度 | `video-log/heartbeat/` 按真实播放器事件形状上报（默认关） | — |
+| 视频进度 | `video-log/heartbeat/` 按真实播放器节奏分批上报：断点续跑、倍速、暂停/跳过、队列落盘（默认关） | — |
 | 系统通知 | 开课、新签到、提交失败（60s 去重）；后台/托盘状态照常弹 Windows Toast | 同左 |
 | 后台常驻 | 关闭窗口收到托盘，轮询与提醒继续；可开机自启 | 同左 |
 | 自动更新 | GitHub Releases + electron-updater，启动 12s 后检查、之后每 4 小时；安装版一键重启安装 | 同左 |
@@ -122,8 +122,8 @@ AI 建议用虚线高亮并带 `AI` 标；主观题只出解析，永远不自�
 
 | 文件 | 体积 | 说明 |
 |---|---|---|
-| `CourseDesk-0.1.1-portable.exe` | 105 MB | 便携版，双击即用，不写注册表；拷走 exe 就能换机器 |
-| `CourseDesk-0.1.1-setup.exe` | 116 MB | NSIS 安装包，可自选目录，建桌面 / 开始菜单快捷方式 |
+| `CourseDesk-0.2.0-portable.exe` | 105 MB | 便携版，双击即用，不写注册表；拷走 exe 就能换机器 |
+| `CourseDesk-0.2.0-setup.exe` | 116 MB | NSIS 安装包，可自选目录，建桌面 / 开始菜单快捷方式 |
 | `win-unpacked/`（可选） | 约 315 MB | 免安装目录，直接跑 `CourseDesk.exe` |
 
 未配置代码签名证书，首次运行 SmartScreen 会提示"更多信息 → 仍要运行"。
@@ -131,7 +131,7 @@ AI 建议用虚线高亮并带 `AI` 标；主观题只出解析，永远不自�
 ## 从源码运行
 
 ```bash
-# Node ≥ 22（本项目在 Node 26 / Electron 45 上验证）
+# Node ≥ 22（package.json 的 engines 已锁定；本项目在 Node 24 / Electron 45 上验证）
 git clone https://github.com/Qiuizi/CourseDesk.git
 cd CourseDesk
 npm install
@@ -139,14 +139,14 @@ npm install
 npm run dev       # 开发模式（HMR）
 npm run build     # 产出 out/
 npm start         # 预览构建产物
-npm test          # 协议层纯函数单测（17 项，含独立实现的 AES 对照向量）
+npm test          # 单元测试（36 项：协议纯函数 + 刷课状态机 + state.json 校验；含独立 AES 对照向量）
 ```
 
 打包：
 
 ```bash
-npm run pack       # 单文件便携版 → release/CourseDesk-0.1.1-portable.exe
-npm run pack:nsis  # 安装包     → release/CourseDesk-0.1.1-setup.exe
+npm run pack       # 单文件便携版 → release/CourseDesk-0.2.0-portable.exe
+npm run pack:nsis  # 安装包     → release/CourseDesk-0.2.0-setup.exe
 npm run pack:dir   # 免安装目录 → release/win-unpacked/
 ```
 
@@ -233,10 +233,20 @@ unlockproblem(problemId, limit, pres)
 
 同一套告警还统计课堂 WS 里没见过的 `op`。开发者模式「协议」页看明细，普通模式在「设置 → 接口变更提醒」看人话版本。
 
-### 6. 视频进度心跳
+### 6. 视频进度心跳（刷课队列）
 
-`video-log/heartbeat/` 的 `heart_data[]` 按真实播放器形状构造（`i=20`、`p=web`、`lob=ykt`、`source=ks`、
-`cp` 单调递增，末尾补一条到片尾）。默认关闭，需要手动触发（「课件与视频」卡片填 presentationId → 上报）。
+`video-log/heartbeat/` 的 `heart_data[]` 按真实播放器形状构造（`i=20`、`p=web`、`lob=ykt`、`source=ks`），
+但不再一次性把整段灌完，而是按「真实经过时间 × 倍速」推进游标：
+
+- 每次只上报本批跨过的媒体区间：`cp` 单调递增、`ts` 落在 `[at - elapsed, at]` 内，不会指向未来；
+- 一条视频一整轮共用一个 `pg`，续跑时从断点位置开播，不会把 `cp` 打回 0；
+- 游标与队列落盘到 `state.json`：重启后恢复成「已暂停」，点继续即从断点续跑；
+- 单批上限 40 条、批次间隔 3–120s（默认 10s，±15% 抖动）；连续 3 次失败自动暂停并通知；
+- 倍速 1× / 1.5× / 2× / 4×，可在普通模式刷课卡片或设置里改；
+- 课件事件（WS `presentation`）出现且打开「课件出现时自动开刷」时，自动把视频加入队列。
+
+开关：`设置 → 雨课堂 → 允许上报视频进度`（默认关）。之后在「刷课」卡片填 presentationId（可一次贴多个，逗号/换行分隔；留空 = 当前课堂正在放的课件）
+→ 开始；支持暂停 / 继续 / 跳过 / 停止。开发者模式同样在「刷课队列」面板操作。
 
 ## 架构
 
@@ -263,6 +273,9 @@ unlockproblem(problemId, limit, pres)
 
 两条"登录"路径共用同一个 cookie 分区，所以「扫码登录 → 协议层立刻可用」不需要额外传参。
 界面模式只是 `settings.ui.mode` 的一个字段，切换不重建 Engine。
+
+主进程里几个"不该塞进 Engine"的东西已经单独成文件：`farm.ts`（刷课队列状态机，计时器/心跳/断点续跑）、
+`state.ts`（state.json 缓存校验，坏值不进运行态）、`videofarm.ts`（心跳事件的纯计算）。三者都不 import electron，可直接单测。
 
 ## 自检：截图与探针
 
@@ -339,7 +352,9 @@ node_modules/electron/dist/electron.exe scripts/preview.cjs -- \
 | cookie / 登录态 | `%APPDATA%/CourseDesk/Partitions/coursedesk` | Electron 管理，退出账号即清 |
 | 设置 / 事件 / 缓存 | `%APPDATA%/CourseDesk/state.json` | 原子写，250ms 防抖 |
 | AI Key | 同上 `secrets.aiKey` | `safeStorage`（Windows DPAPI）加密，不回传渲染进程 |
-| 日志 | `%APPDATA%/CourseDesk/logs/coursedesk-YYYYMMDD.jsonl` | 环形 600 条 + 按天文件 |
+| 雨课堂 bearer | 同上 `cache.ytBearer` | 与 AI Key 同一套加密；旧版本留下的明文会在下次保存时自动升级 |
+| 断点 / 队列 | 同上 `cache.ytVideoProgress`、`cache.ytVideoQueue` | 只存视频位置与进度，最多 2000 条断点、60 天后过期 |
+| 日志 | `%APPDATA%/CourseDesk/logs/coursedesk-YYYYMMDD.jsonl` | 环形 600 条 + 按天文件；超过 14 天自动删除 |
 
 所有请求由主进程发起；渲染进程没有直连外网的代码路径（CSP 也限制了）。
 
@@ -350,8 +365,9 @@ node_modules/electron/dist/electron.exe scripts/preview.cjs -- \
 3. **学习通 `activelist`** 随版本变化，解析走宽松匹配 + 原始响应入日志，解析不到会在事件流告警而不是静默。
 4. **二维码 / 拍照 / 人脸签到**不做自动，只提醒。
 5. **判断题选项**部分部署不下发，普通模式补 `A 正确 / B 错误` 兜底；学校用别的编码时以题干为准。
-6. **视频心跳**是"上报已有进度"，不是解码视频；默认关闭。
-7. 平台改版会打破协议。所有失败进事件流，`未知 WS op` 会计数。
+6. **视频心跳**是"上报已有进度"，不是解码视频；默认关闭。队列状态机在 `src/main/core/farm.ts`，可以暂停、续跑、跳过，断点落盘。
+7. **`answerPolicy=auto`** 会直接提交客观题，没有撤回通道；不确定时用 `confirm`。
+8. 平台改版会打破协议。所有失败进事件流，`未知 WS op` 会计数。
 
 ## 常见问题
 
@@ -359,7 +375,7 @@ node_modules/electron/dist/electron.exe scripts/preview.cjs -- \
 <summary>登录态和数据存在哪？</summary>
 
 cookie 在 `%APPDATA%/CourseDesk/Partitions/coursedesk`；设置、事件、缓存与 AI Key 在 `state.json`
-（Key 用 Windows DPAPI 加密）；日志按天写到 `logs/coursedesk-YYYYMMDD.jsonl`。全部只在本机。
+（AI Key 与雨课堂 bearer 都用 Windows DPAPI 加密）；日志按天写到 `logs/coursedesk-YYYYMMDD.jsonl`，保留 14 天。全部只在本机。
 </details>
 
 <details>

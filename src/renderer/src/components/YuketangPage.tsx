@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { Problem } from '@shared/types';
 import type { PageProps } from '../lib/store';
+import { FARM_STATUS_LABEL } from '../lib/video';
 import { useTick } from '../lib/store';
-import { countdown, PROBLEM_TYPE, ago, answerPreview } from '../lib/format';
+import { countdown, durationText, PROBLEM_TYPE, ago, answerPreview } from '../lib/format';
 import { Btn, Empty, Field, KeyVal, Lamp, Panel, Pill, TextInput } from './ui';
 import { Feed } from './Feed';
 
@@ -110,6 +111,8 @@ export function YuketangPage({ snap, call }: PageProps): ReactNode {
   const now = useTick(1000);
   const yt = snap.yuketang;
   const lesson = yt.lesson;
+  const farm = yt.videoFarm;
+  const doneCount = farm.items.filter((item) => item.done && !item.skipped).length;
   const [manualLesson, setManualLesson] = useState('');
   const [manualClassroom, setManualClassroom] = useState('');
   const [presentationId, setPresentationId] = useState('');
@@ -230,22 +233,80 @@ export function YuketangPage({ snap, call }: PageProps): ReactNode {
             </div>
           </Panel>
 
-          <Panel eyebrow="LESSON / QUEUE" title="课件与视频" meta="视频进度上报按真实播放器心跳形状构造">
-            <Field label="presentationId" hint="课件 ID">
-              <TextInput value={presentationId} onChange={setPresentationId} placeholder="presentation id" />
+          <Panel
+            eyebrow="VIDEO / FARM"
+            title="刷课队列"
+            meta={
+              farm.status === 'idle'
+                ? '未开始 · 按真实播放器节奏排队上报'
+                : `${FARM_STATUS_LABEL[farm.status]} · ${doneCount}/${farm.items.length} 完成 · ${farm.speed}×`
+            }
+            actions={
+              <Btn size="sm" variant="quiet" onClick={() => void call((api) => api.ytVideoSpeed(farm.speed >= 4 ? 1 : farm.speed * 2))}>
+                倍速 {farm.speed}×
+              </Btn>
+            }
+          >
+            {!snap.settings.yuketang.videoHeartbeat && (
+              <div className="tiny dim2" style={{ marginBottom: 8 }}>
+                设置里还没打开「允许上报视频进度」，启动会被拒绝。
+              </div>
+            )}
+            <Field label="presentationId" hint="多个用逗号 / 空格 / 换行分隔；留空 = 当前课堂正在放的课件">
+              <TextInput value={presentationId} onChange={setPresentationId} placeholder="presentation id（可留空）" />
             </Field>
             <div className="inline" style={{ marginTop: 8 }}>
               <Btn
                 size="sm"
-                disabled={!presentationId}
-                onClick={() => void call((api) => api.ytVideoPush(presentationId.trim()))}
+                variant="primary"
+                disabled={(!presentationId && !lesson) || farm.status === 'running' || farm.status === 'collecting'}
+                onClick={() => void call((api) => api.ytVideoStart(presentationId.trim()))}
               >
-                上报视频进度
+                加入并开始
               </Btn>
-              <span className="tiny dim2">
-                已上报 {Object.keys(yt.videoReported).length} 个课件
-              </span>
+              {farm.status === 'running' ? (
+                <Btn size="sm" onClick={() => void call((api) => api.ytVideoPause())}>
+                  暂停
+                </Btn>
+              ) : (
+                <Btn size="sm" disabled={!farm.items.length} onClick={() => void call((api) => api.ytVideoResume())}>
+                  继续
+                </Btn>
+              )}
+              <Btn size="sm" disabled={!farm.items.length} onClick={() => void call((api) => api.ytVideoSkip())}>
+                跳过
+              </Btn>
+              <Btn size="sm" variant="danger" disabled={!farm.items.length} onClick={() => void call((api) => api.ytVideoStop())}>
+                停止
+              </Btn>
             </div>
+            {farm.lastError && <div className="tiny" style={{ color: 'var(--danger)', marginTop: 6 }}>{farm.lastError}</div>}
+            {farm.items.length > 0 && (
+              <>
+                <div className="divider" />
+                <div className="scroll">
+                  {farm.items.map((item, index) => (
+                    <div className={`row${index === farm.currentIndex && farm.status === 'running' ? ' is-live' : ''}`} key={`${item.presentationId}-${item.videoId}`}>
+                      <div className="row__main">
+                        <div className="row__title">
+                          {item.name}
+                          {item.skipped && <span className="tiny dim2"> · 已跳过</span>}
+                        </div>
+                        <div className="row__sub mono">
+                          {durationText(item.position)} / {durationText(item.duration)} · {item.sentTicks} 条 · {item.lastError ?? item.presentationId}
+                        </div>
+                        <div className="bar" style={{ marginTop: 5 }}>
+                          <span className={item.skipped ? 'bar__fill bar__fill--warn' : 'bar__fill'} style={{ width: `${item.percent}%` }} />
+                        </div>
+                      </div>
+                      <Pill tone={item.done ? (item.skipped ? 'warn' : 'ok') : 'idle'} mono>
+                        {item.percent}%
+                      </Pill>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="divider" />
             <KeyVal k="课堂地址" v={`/lesson/fullscreen/v3/<lessonId>?source=${snap.settings.yuketang.checkinSource}`} />
             <KeyVal k="WS" v={`wss://${snap.settings.yuketang.host}/wsapp/`} />

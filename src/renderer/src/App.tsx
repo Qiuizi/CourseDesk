@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
+import { Toaster } from './components/Toaster';
 import { useEngine } from './lib/store';
 import type { UiMode } from './lib/mode';
 import { DevShell } from './dev/DevShell';
@@ -85,6 +86,7 @@ export default function App(): ReactNode {
   return (
     <>
       {shell}
+      <Toaster />
       {veil && (
         <LoadingScreen
           mode={veil.mode}

@@ -18,3 +18,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # 构建能挡住“本地能跑、一打包就崩”的入口/类型问题
+      - run: npm run build

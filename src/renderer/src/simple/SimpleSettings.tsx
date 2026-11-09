@@ -3,6 +3,7 @@ import type { PageProps } from '../lib/store';
 import { useTick } from '../lib/store';
 import { ago, hhmm } from '../lib/format';
 import { CHECKIN_HOSTS, CHECKIN_SOURCES } from '../lib/options';
+import { FARM_SPEED_OPTIONS, clampFarmSpeed, clampTickSec } from '../lib/video';
 import { SBadge, SBtn, SCard, SDot, SEmpty, SField, SInput, SMeter, SRow, SSelect, SToggle } from './ui';
 import { switchMode } from '../lib/mode';
 
@@ -196,6 +197,43 @@ export function SimpleSettings({ snap, call }: PageProps): ReactNode {
                   { value: 'confirm', label: 'AI 给答案，我确认后提交' },
                   { value: 'auto', label: '客观题自动提交' },
                 ]}
+              />
+            </SField>
+            <SToggle
+              checked={s.yuketang.videoHeartbeat}
+              onChange={(v) => patch({ yuketang: { ...s.yuketang, videoHeartbeat: v } })}
+              label="允许上报视频进度"
+              hint="按真实播放器节奏排队上报；关闭后刷课无法启动"
+            />
+            <SToggle
+              checked={s.yuketang.video.autoStart}
+              onChange={(v) =>
+                patch({ yuketang: { ...s.yuketang, video: { ...s.yuketang.video, autoStart: v } } })
+              }
+              label="课件出现时自动开刷"
+              hint="课堂上老师开始放课件/视频时自动排队（需要上面的开关）"
+            />
+            <SField label="每批间隔（秒）" hint="越小越快被风控，建议 8–15">
+              <SInput
+                type="number"
+                value={String(s.yuketang.video.tickSec)}
+                onCommit={(v) =>
+                  patch({
+                    yuketang: {
+                      ...s.yuketang,
+                      video: { ...s.yuketang.video, tickSec: clampTickSec(v) },
+                    },
+                  })
+                }
+              />
+            </SField>
+            <SField label="上报倍速" hint="2× = 真实 1 秒推进 2 秒视频">
+              <SSelect
+                value={String(s.yuketang.video.speed)}
+                onChange={(v) =>
+                  patch({ yuketang: { ...s.yuketang, video: { ...s.yuketang.video, speed: clampFarmSpeed(v) } } })
+                }
+                options={FARM_SPEED_OPTIONS}
               />
             </SField>
           </SCard>

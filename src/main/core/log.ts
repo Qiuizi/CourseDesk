@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { appendFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { LogLine } from '@shared/types';
@@ -11,11 +11,30 @@ let logDir = '';
 let initPromise: Promise<void> | null = null;
 let chain: Promise<void> = Promise.resolve();
 
+const LOG_TTL_MS = 14 * 86_400_000;
+const LOG_NAME = /^coursedesk-\d{8}\.jsonl$/;
+
+/** 日志按天滚，超过 14 天的文件直接删掉，避免长期使用后目录无限增长 */
+async function pruneLogs(): Promise<void> {
+  const names = await readdir(logDir).catch(() => [] as string[]);
+  const cutoff = Date.now() - LOG_TTL_MS;
+  await Promise.all(
+    names
+      .filter((name) => LOG_NAME.test(name))
+      .map(async (name) => {
+        const path = join(logDir, name);
+        const info = await stat(path).catch(() => null);
+        if (info && info.mtimeMs < cutoff) await unlink(path).catch(() => undefined);
+      }),
+  );
+}
+
 function ensureInit(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
       logDir = join(app.getPath('userData'), 'logs');
       await mkdir(logDir, { recursive: true });
+      await pruneLogs();
     })();
   }
   return initPromise;

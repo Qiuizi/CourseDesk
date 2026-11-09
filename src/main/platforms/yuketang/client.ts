@@ -13,7 +13,7 @@ import { request, requestWithRetry, describeHttpFailure, type HttpResult } from 
 import { log } from '../../core/log';
 import { H5_HEADERS, WEB_HEADERS, yt } from './endpoints';
 import type { Course, HomeworkItem, OnLesson, Problem } from '@shared/types';
-import { normalizeCourseList, normalizeProblem, num, str } from './normalize';
+import { normalizeCourseList, normalizeProblem, num, str, normalizeHost } from './normalize';
 import type { VideoRef } from './normalize';
 
 export interface YtEnvelope<T = unknown> {
@@ -33,9 +33,11 @@ export class YtClient {
   constructor(private host = 'www.yuketang.cn') {}
 
   setHost(host: string): void {
-    if (host && host !== this.host) {
-      this.host = host;
-      log.info('yt', `域名切换为 ${host}`);
+    // 只留主机名：协议/路径/参数由端点自己拼，避免把脏输入带进 URL
+    const next = normalizeHost(host);
+    if (next !== this.host) {
+      this.host = next;
+      log.info('yt', `域名切换为 ${next}`);
     }
   }
 

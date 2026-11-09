@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppSnapshot } from '@shared/types';
+import { toast } from './toast';
 
 const FALLBACK: AppSnapshot = {
   version: '—',
@@ -13,8 +14,8 @@ const FALLBACK: AppSnapshot = {
       checkinSource: 5,
       checkinMode: 'both',
       answerPolicy: 'off',
-      confirmTimeoutSec: 60,
       videoHeartbeat: false,
+      video: { speed: 2, tickSec: 10, autoStart: false },
       homeworkWatch: true,
     },
     chaoxing: {
@@ -39,7 +40,14 @@ const FALLBACK: AppSnapshot = {
     lesson: null,
     homework: [],
     monitor: { running: false, pollCount: 0 },
-    videoReported: {},
+    videoFarm: {
+      status: 'idle',
+      speed: 2,
+      tickSec: 10,
+      items: [],
+      currentIndex: 0,
+      autoStarted: false,
+    },
   },
   chaoxing: {
     auth: { logged: false },
@@ -67,23 +75,26 @@ export function useEngine(): {
   snap: AppSnapshot;
   ready: boolean;
   call: <T = unknown>(fn: (api: Window['coursedesk']) => Promise<T>) => Promise<T | undefined>;
-  pending: Record<string, boolean>;
 } {
   const [snap, setSnap] = useState<AppSnapshot>(FALLBACK);
   const [ready, setReady] = useState(false);
-  const [pending, setPending] = useState<Record<string, boolean>>({});
   const mounted = useRef(true);
 
   useEffect(() => {
     mounted.current = true;
     const api = window.coursedesk;
     if (!api) return;
-    void api.snapshot().then((s) => {
-      if (mounted.current) {
-        setSnap(s);
-        setReady(true);
-      }
-    });
+    void api
+      .snapshot()
+      .then((s) => {
+        if (mounted.current) {
+          setSnap(s);
+          setReady(true);
+        }
+      })
+      .catch((err: unknown) => {
+        toast(`读取状态失败：${err instanceof Error ? err.message : String(err)}`);
+      });
     const off = api.onSnapshot((next) => {
       if (mounted.current) setSnap(next);
     });
@@ -95,24 +106,26 @@ export function useEngine(): {
 
   const call = useCallback(async <T,>(fn: (api: Window['coursedesk']) => Promise<T>): Promise<T | undefined> => {
     const api = window.coursedesk;
-    if (!api) return undefined;
-    const key = fn.toString().slice(0, 40);
-    setPending((p) => ({ ...p, [key]: true }));
-    try {
-      return await fn(api);
-    } catch {
+    if (!api) {
+      toast('界面与主进程的连接还没建立好，请稍后重试');
       return undefined;
-    } finally {
-      setPending((p) => {
-        const next = { ...p };
-        delete next[key];
-        return next;
-      });
+    }
+    try {
+      const result = await fn(api);
+      // 主进程统一用 { ok:false, msg } 表达失败：这里兜底提示，避免"点了没反应"
+      const failure = result as { ok?: unknown; msg?: unknown; detail?: unknown } | null;
+      if (failure && typeof failure === 'object' && failure.ok === false) {
+        const text = [failure.msg, failure.detail].find((v): v is string => typeof v === 'string' && v.trim() !== '');
+        toast(text ?? '操作没有成功');
+      }
+      return result;
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err));
+      return undefined;
     }
   }, []);
 
-  const memoPending = useMemo(() => pending, [pending]);
-  return { snap, ready, call, pending: memoPending };
+  return { snap, ready, call };
 }
 
 export function useTick(intervalMs = 1000): number {

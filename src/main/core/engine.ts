@@ -5,7 +5,16 @@
  */
 
 import { JsonStore } from './log';
-import { buildHeartbeatEvents, dedupeEvents, deepMerge } from './pure';
+import { dedupeEvents, deepMerge } from './pure';
+import { VideoFarmRunner, type FarmHost, type FarmProgress, type FarmResult } from './farm';
+import {
+  normalizeBaselines,
+  normalizeCourses,
+  normalizeHomework,
+  normalizeProgress,
+  normalizeQueue,
+  normalizeSigns,
+} from './state';
 import { log } from './log';
 import { notify } from './notify';
 import { callAi, buildPrompt, parseAnswerArray } from './ai';
@@ -13,6 +22,7 @@ import { decryptSecret, encryptSecret } from './net';
 import { YtClient, buildResult, str } from '../platforms/yuketang/client';
 import { YtLessonSocket } from '../platforms/yuketang/ws';
 import { yt } from '../platforms/yuketang/endpoints';
+import { normalizeHost } from '../platforms/yuketang/normalize';
 import { ChaoxingClient, isSignActive } from '../platforms/chaoxing/client';
 import { buildProbes, runDriftCheck, type DriftProbe } from './drift';
 import type {
@@ -30,6 +40,7 @@ import type {
   Settings,
   UpdateState,
   SignRecord,
+  VideoFarmItem,
 } from '@shared/types';
 
 /** 事件里只留小载荷：整段响应会把内存和每次快照的序列化都撑起来 */
@@ -53,8 +64,8 @@ export const DEFAULT_SETTINGS: Settings = {
     checkinSource: 5,
     checkinMode: 'both',
     answerPolicy: 'off',
-    confirmTimeoutSec: 60,
     videoHeartbeat: false,
+    video: { speed: 2, tickSec: 10, autoStart: false },
     homeworkWatch: true,
   },
   chaoxing: {
@@ -87,6 +98,10 @@ interface PersistData {
     cxSigns?: SignRecord[];
     ytHomework?: HomeworkItem[];
     cxHomework?: HomeworkItem[];
+    /** 刷课断点：`presentationId|videoId` → 已上报位置 */
+    ytVideoProgress?: Record<string, { position: number; done: boolean; at: number }>;
+    /** 未刷完的队列，重启后可直接继续 */
+    ytVideoQueue?: { items: VideoFarmItem[]; currentIndex: number; at: number };
     driftBaselines?: Record<string, { hash: string; paths: string[]; at: number }>;
   };
 }
@@ -108,6 +123,9 @@ export class Engine {
   private seenActives = new Set<string>();
   private notifyThrottle = new Map<string, number>();
   private stopped = false;
+  /** 刷课：断点表 + 队列状态机（计时器/会话在 VideoFarmRunner 里） */
+  private farmSaved: Record<string, FarmProgress> = {};
+  private readonly farm: VideoFarmRunner;
 
   constructor(private readonly broadcast: (snap: AppSnapshot) => void) {
     this.store = new JsonStore<PersistData>('state.json', {
@@ -128,7 +146,14 @@ export class Engine {
         lesson: null,
         homework: [],
         monitor: { running: false, pollCount: 0 },
-        videoReported: {},
+        videoFarm: {
+          status: 'idle',
+          speed: DEFAULT_SETTINGS.yuketang.video.speed,
+          tickSec: DEFAULT_SETTINGS.yuketang.video.tickSec,
+          items: [],
+          currentIndex: 0,
+          autoStarted: false,
+        },
       },
       chaoxing: {
         auth: { logged: false },
@@ -151,6 +176,29 @@ export class Engine {
       update: { status: 'idle' },
       busy: {},
     };
+    this.farm = new VideoFarmRunner(this.farmHost());
+  }
+
+  /** 刷课状态机与引擎的边界：只暴露它真正需要的东西 */
+  private farmHost(): FarmHost {
+    return {
+      snapshot: () => this.snap,
+      savedProgress: (key) => this.farmSaved[key],
+      saveProgress: (key, value) => {
+        this.farmSaved[key] = value;
+      },
+      userId: () => this.yt.userId,
+      heartbeat: (events) => this.yt.videoHeartbeat(events),
+      presentation: (id) => this.yt.presentation(id),
+      activePresentation: (lessonId) => this.yt.activePresentation(lessonId),
+      emit: (event) => {
+        this.emit({ platform: 'yuketang', ...event });
+      },
+      notify: (key, title, body) => this.throttledNotify(key, title, body),
+      pushSoon: () => this.pushSoon(),
+      persist: () => void this.persist(),
+      isStopped: () => this.stopped,
+    };
   }
 
   /* ---------------------------------------------------------------- 生命周期 */
@@ -166,15 +214,33 @@ export class Engine {
     this.snap.drift.intervalHours = this.snap.settings.drift.intervalHours;
 
     const cache = persisted.cache ?? {};
+    this.snap.settings.yuketang.host = normalizeHost(this.snap.settings.yuketang.host);
     this.yt.setHost(this.snap.settings.yuketang.host);
-    this.yt.bearer = cache.ytBearer ?? '';
+    // bearer 与 AI Key 一样落盘加密；旧版本的明文（不以 v1:/raw: 开头）原样读回，下次保存时升级
+    const storedBearer = cache.ytBearer ?? '';
+    this.yt.bearer = /^(v1|raw):/.test(storedBearer) ? decryptSecret(storedBearer) : storedBearer;
     this.yt.uvId = cache.ytUvId ?? '0';
     this.yt.userId = cache.ytUserId ?? '';
-    this.snap.yuketang.courses = cache.ytCourses ?? [];
-    this.snap.chaoxing.courses = cache.cxCourses ?? [];
-    this.snap.chaoxing.signs = cache.cxSigns ?? [];
-    this.snap.yuketang.homework = cache.ytHomework ?? [];
-    this.snap.chaoxing.homework = cache.cxHomework ?? [];
+    this.snap.yuketang.courses = normalizeCourses(cache.ytCourses);
+    this.snap.chaoxing.courses = normalizeCourses(cache.cxCourses);
+    this.snap.chaoxing.signs = normalizeSigns(cache.cxSigns);
+    this.snap.yuketang.homework = normalizeHomework(cache.ytHomework);
+    this.snap.chaoxing.homework = normalizeHomework(cache.cxHomework);
+    // 断点：丢掉过期/手改坏的值，最多 2000 条（校验在 state.ts，可测试）
+    this.farmSaved = normalizeProgress(cache.ytVideoProgress);
+
+    // 上次没刷完的队列：恢复成"已暂停"，由用户点继续（不自动发请求）
+    const queue = normalizeQueue(cache.ytVideoQueue);
+    if (queue) {
+      const farm = this.snap.yuketang.videoFarm;
+      farm.items = queue.items;
+      farm.currentIndex = queue.currentIndex;
+      farm.speed = this.snap.settings.yuketang.video.speed;
+      farm.tickSec = this.snap.settings.yuketang.video.tickSec;
+      farm.updatedAt = queue.at;
+      farm.status = farm.items.some((i) => !i.done) ? 'paused' : 'done';
+      log.info('engine', `恢复刷课队列：${farm.items.length} 个视频，续跑点 ${farm.currentIndex}`);
+    }
 
     this.emit({
       platform: 'yuketang',
@@ -319,6 +385,61 @@ export class Engine {
       },
     ];
     this.snap.yuketang.monitor = { running: true, lastPollAt: now - 12_000, lastPollOk: true, pollCount: 42 };
+    this.snap.settings.yuketang.videoHeartbeat = true;
+    this.snap.yuketang.videoFarm = {
+      status: 'paused',
+      speed: 2,
+      tickSec: 10,
+      currentIndex: 0,
+      startedAt: now - 18 * min,
+      updatedAt: now - 40_000,
+      lastReply: 'ok',
+      autoStarted: false,
+      items: [
+        {
+          presentationId: 'pres-3391',
+          videoId: 'v-88f2',
+          name: '第 3 讲 · 栈与队列',
+          duration: 1840,
+          position: 1220,
+          percent: 66,
+          seq: 244,
+          done: false,
+          skipped: false,
+          attempts: 0,
+          sentTicks: 122,
+          updatedAt: now - 40_000,
+        },
+        {
+          presentationId: 'pres-3391',
+          videoId: 'v-91ab',
+          name: '第 3 讲 · 递归与分治',
+          duration: 960,
+          position: 0,
+          percent: 0,
+          seq: 0,
+          done: false,
+          skipped: false,
+          attempts: 0,
+          sentTicks: 0,
+          updatedAt: now - 18 * min,
+        },
+        {
+          presentationId: 'pres-3392',
+          videoId: 'v-a012',
+          name: '实验演示 · 链表操作',
+          duration: 420,
+          position: 420,
+          percent: 100,
+          seq: 84,
+          done: true,
+          skipped: false,
+          attempts: 0,
+          sentTicks: 84,
+          updatedAt: now - 30 * min,
+        },
+      ],
+    };
 
     this.snap.chaoxing.auth = { logged: true, userName: '演示同学', userId: 'cx-8802', checkedAt: now - 3 * min };
     this.snap.chaoxing.courses = [
@@ -472,6 +593,10 @@ export class Engine {
     this.stopped = true;
     this.stopMonitors();
     this.stopDrift();
+    this.farm.shutdown();
+    if (this.snap.yuketang.videoFarm.status === 'paused') {
+      this.snap.yuketang.videoFarm.updatedAt = Date.now();
+    }
     this.sock?.close();
     this.sock = null;
     await this.persist();
@@ -488,12 +613,21 @@ export class Engine {
         ...d.cache,
         ytCourses: this.snap.yuketang.courses,
         cxCourses: this.snap.chaoxing.courses,
-        ytBearer: this.yt.bearer,
+        ytBearer: encryptSecret(this.yt.bearer),
         ytUvId: this.yt.uvId,
         ytUserId: this.yt.userId,
         cxSigns: this.snap.chaoxing.signs.slice(0, 200),
         ytHomework: this.snap.yuketang.homework,
         cxHomework: this.snap.chaoxing.homework,
+        ytVideoProgress: this.farmSaved,
+        ytVideoQueue:
+          this.snap.yuketang.videoFarm.items.length > 0
+            ? {
+                items: this.snap.yuketang.videoFarm.items,
+                currentIndex: this.snap.yuketang.videoFarm.currentIndex,
+                at: Date.now(),
+              }
+            : undefined,
       };
     });
   }
@@ -560,6 +694,11 @@ export class Engine {
   updateSettings(patch: Partial<Settings>): Settings {
     this.snap.settings = deepMerge(this.snap.settings, patch);
     if (patch.yuketang?.host) this.yt.setHost(patch.yuketang.host);
+    if (patch.yuketang?.video) {
+      const farm = this.snap.yuketang.videoFarm;
+      farm.speed = Math.min(8, Math.max(1, this.snap.settings.yuketang.video.speed));
+      farm.tickSec = Math.min(120, Math.max(3, this.snap.settings.yuketang.video.tickSec));
+    }
     this.snap.drift.enabled = this.snap.settings.drift.enabled;
     this.snap.drift.intervalHours = this.snap.settings.drift.intervalHours;
     this.scheduleDrift();
@@ -574,6 +713,8 @@ export class Engine {
     this.snap.settings = structuredClone(DEFAULT_SETTINGS);
     this.snap.settings.ai.hasKey = Boolean(this.aiKey);
     this.yt.setHost(DEFAULT_SETTINGS.yuketang.host);
+    this.snap.yuketang.videoFarm.speed = DEFAULT_SETTINGS.yuketang.video.speed;
+    this.snap.yuketang.videoFarm.tickSec = DEFAULT_SETTINGS.yuketang.video.tickSec;
     this.restartMonitors();
     void this.persist();
     this.pushSoon();
@@ -964,6 +1105,13 @@ export class Engine {
       if (res.lessonToken && res.identityId) {
         this.openSocket(lessonId, res.lessonToken, res.identityId);
       }
+      // 开了自动刷课：进课堂后主动取一次当前课件，别等 WS 推 presentation
+      if (cfg.videoHeartbeat && cfg.video.autoStart) {
+        void this.yt
+          .activePresentation(lessonId)
+          .then((presId) => (presId ? this.loadPresentation(presId) : undefined))
+          .catch(() => undefined);
+      }
       if (cfg.checkinMode === 'page' || cfg.checkinMode === 'both') {
         await this.openLessonWindow(lessonId);
       }
@@ -1011,7 +1159,8 @@ export class Engine {
   }
 
   private async loadPresentation(presentationId: string): Promise<void> {
-    const { problems } = await this.yt.presentation(presentationId);
+    const { problems, videos } = await this.yt.presentation(presentationId);
+    this.maybeAutoFarm(presentationId, videos);
     if (!problems.length) return;
     const lesson = this.snap.yuketang.lesson;
     if (!lesson) return;
@@ -1193,26 +1342,42 @@ export class Engine {
     return { ok: res.ok, msg: res.msg };
   }
 
-  /** 视频进度心跳（本地测试用）：按真实播放器的字段形状上报 */
-  async pushVideoProgress(presentationId: string): Promise<{ ok: boolean; detail: string }> {
-    const host = this.snap.settings.yuketang.host;
-    const { videos } = await this.yt.presentation(presentationId);
-    if (!videos.length) return { ok: false, detail: '该课件没有可上报的视频' };
-    const userId = this.yt.userId;
-    if (!userId) return { ok: false, detail: '缺少 user_id（先进一次课堂）' };
-    const events = buildHeartbeatEvents(videos, userId);
-    const res = await this.yt.videoHeartbeat(events);
-    this.snap.yuketang.videoReported[presentationId] = events.length;
-    this.emit({
-      platform: 'yuketang',
-      kind: 'video',
-      level: res.ok ? 'success' : 'warn',
-      title: res.ok ? '视频进度已上报' : '视频进度上报失败',
-      detail: `${events.length} 条心跳 · ${presentationId} · host=${host}`,
-      data: { presentationId },
-    });
-    this.pushSoon();
-    return { ok: res.ok, detail: res.ok ? `${events.length} 条` : res.msg };
+  /* ---------------------------------------------------------------- 刷课 */
+
+  /**
+   * 队列状态机在 farm.ts（VideoFarmRunner）：这里只做设置同步与转发，
+   * IPC 通道保持不变。刷课节奏、重试、断点续跑都在那边，可单测。
+   */
+  startVideoFarm(raw: string | string[]): Promise<FarmResult> {
+    return this.farm.start(raw);
+  }
+
+  pauseVideoFarm(reason?: string): { ok: boolean; detail: string } {
+    return this.farm.pause(reason);
+  }
+
+  resumeVideoFarm(): { ok: boolean; detail: string } {
+    return this.farm.resume();
+  }
+
+  stopVideoFarm(): { ok: boolean; detail: string } {
+    return this.farm.stop();
+  }
+
+  skipVideoFarm(): { ok: boolean; detail: string } {
+    return this.farm.skip();
+  }
+
+  setVideoFarmSpeed(speed: number): { ok: boolean; speed: number } {
+    const next = this.farm.setSpeed(speed);
+    this.snap.settings.yuketang.video = { ...this.snap.settings.yuketang.video, speed: next };
+    void this.persist();
+    return { ok: true, speed: next };
+  }
+
+  /** 课件出现时的自动入队（由 loadPresentation 调用） */
+  private maybeAutoFarm(presentationId: string, videos: { videoId: string; duration: number; name?: string }[]): void {
+    this.farm.maybeAuto(presentationId, videos);
   }
 
   /* ---------------------------------------------------------------- 接口变更检测 */
@@ -1277,7 +1442,7 @@ export class Engine {
       });
 
       const store = this.store.get();
-      const baselines = { ...(store.cache.driftBaselines ?? {}) };
+      const baselines = normalizeBaselines(store.cache.driftBaselines);
       let baselineDirty = false;
 
       const results = await runDriftCheck(probes, {
@@ -1479,4 +1644,5 @@ export function summarizeProblemForUi(p: Problem): string {
 
 export type { Course, OnLesson };
 
-export { buildHeartbeatEvents, dedupeEvents, deepMerge } from './pure';
+export { dedupeEvents, deepMerge } from './pure';
+export { buildHeartbeatBatch, parsePresentationIds, tickDelay } from './videofarm';

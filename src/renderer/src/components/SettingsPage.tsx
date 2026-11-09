@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { PageProps } from '../lib/store';
 import { Btn, Field, KeyVal, LocalInput, Panel, Pill, Select, TextInput, Toggle } from './ui';
 import { CHECKIN_HOSTS, CHECKIN_MODES, CHECKIN_SOURCES, ANSWER_POLICIES } from '../lib/options';
+import { FARM_SPEED_OPTIONS, clampFarmSpeed, clampTickSec } from '../lib/video';
 
 export function SettingsPage({ snap, call }: PageProps): ReactNode {
   const s = snap.settings;
@@ -81,6 +82,33 @@ export function SettingsPage({ snap, call }: PageProps): ReactNode {
             <div className="inline tiny dim2">
               主观题（type 5）永远只生成解析，不提交；这是硬规则，不随策略变化。
             </div>
+            <div className="divider" />
+            <Toggle
+              checked={s.yuketang.videoHeartbeat}
+              onChange={(v) => patch({ yuketang: { ...s.yuketang, videoHeartbeat: v } })}
+              label="允许上报视频进度"
+              hint="按真实播放器节奏排队上报；关闭后刷课无法启动"
+            />
+            <Toggle
+              checked={s.yuketang.video.autoStart}
+              onChange={(v) => patch({ yuketang: { ...s.yuketang, video: { ...s.yuketang.video, autoStart: v } } })}
+              label="课件出现时自动开刷"
+              hint="课堂上老师开始放课件/视频时自动排队（需要上面的开关）"
+            />
+            <Field label="每批间隔" hint="秒；越小越快被风控，建议 8–15">
+              <LocalInput
+                type="number"
+                value={String(s.yuketang.video.tickSec)}
+                onCommit={(v) => patch({ yuketang: { ...s.yuketang, video: { ...s.yuketang.video, tickSec: clampTickSec(v) } } })}
+              />
+            </Field>
+            <Field label="上报倍速" hint="2× = 真实 1 秒推进 2 秒视频">
+              <Select
+                value={String(s.yuketang.video.speed)}
+                onChange={(v) => patch({ yuketang: { ...s.yuketang, video: { ...s.yuketang.video, speed: clampFarmSpeed(v) } } })}
+                options={FARM_SPEED_OPTIONS}
+              />
+            </Field>
           </div>
         </Panel>
 

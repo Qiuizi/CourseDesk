@@ -23,8 +23,14 @@ const api = {
     ipcRenderer.invoke(IPC.ytAnswer, problemId, result),
   ytAskAi: (problemId: string): Promise<{ ok: boolean; result?: unknown; message: string }> =>
     ipcRenderer.invoke(IPC.ytAskAi, problemId),
-  ytVideoPush: (presentationId: string): Promise<{ ok: boolean; detail: string }> =>
-    ipcRenderer.invoke(IPC.ytVideoPush, presentationId),
+  ytVideoStart: (presentationIds: string | string[]): Promise<{ ok: boolean; detail: string; queued: number }> =>
+    ipcRenderer.invoke(IPC.ytVideoStart, presentationIds),
+  ytVideoPause: (): Promise<{ ok: boolean; detail: string }> => ipcRenderer.invoke(IPC.ytVideoPause),
+  ytVideoResume: (): Promise<{ ok: boolean; detail: string }> => ipcRenderer.invoke(IPC.ytVideoResume),
+  ytVideoStop: (): Promise<{ ok: boolean; detail: string }> => ipcRenderer.invoke(IPC.ytVideoStop),
+  ytVideoSkip: (): Promise<{ ok: boolean; detail: string }> => ipcRenderer.invoke(IPC.ytVideoSkip),
+  ytVideoSpeed: (speed: number): Promise<{ ok: boolean; speed: number }> =>
+    ipcRenderer.invoke(IPC.ytVideoSpeed, speed),
 
   cxLogin: (phone: string, password: string): Promise<{ ok: boolean; msg: string }> =>
     ipcRenderer.invoke(IPC.cxLogin, phone, password),

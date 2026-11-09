@@ -110,3 +110,20 @@ export function buildResult(problemType: number, answer: string[], blanks: strin
     .filter((a) => /^[A-Z]$/.test(a));
   return Array.from(new Set(letters)).sort();
 }
+
+/**
+ * 学校域名清洗：只接受主机名（可带端口），去掉协议/路径/查询串。
+ * 端点拼的是 `https://${host}/…`，未清洗的输入会把路径或参数带进 URL。
+ */
+export function normalizeHost(input: unknown, fallback = 'www.yuketang.cn'): string {
+  let host = str(input).trim().toLowerCase();
+  if (!host) return fallback;
+  host = host.replace(/^[a-z][a-z0-9+.-]*:\/\//, '');
+  host = host.split(/[/?#]/)[0];
+  host = host.replace(/:\d+$/, (port) => (/^:(80|443)$/.test(port) ? '' : port));
+  if (host.length > 120 || !/^[a-z0-9.-]+(:\d{1,5})?$/.test(host)) return fallback;
+  if (!host.includes('.')) return fallback;
+  // 裸 IP 只可能是内网/本机地址，没有正当用途
+  if (/^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(host)) return fallback;
+  return host;
+}

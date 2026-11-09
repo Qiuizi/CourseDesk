@@ -104,7 +104,12 @@ export function registerIpc(ctx: IpcContext): void {
   handle(IPC.ytAnswer, (problemId: string, result: unknown) => engine.submitAnswer(problemId, result));
   handle(IPC.ytAskAi, (problemId: string) => engine.generateAnswer(problemId));
   handle(IPC.ytWatchHomework, () => engine.refreshYuketang());
-  handle(IPC.ytVideoPush, (presentationId: string) => engine.pushVideoProgress(presentationId));
+  handle(IPC.ytVideoStart, (presentationIds: string | string[]) => engine.startVideoFarm(presentationIds));
+  handle(IPC.ytVideoPause, () => engine.pauseVideoFarm());
+  handle(IPC.ytVideoResume, () => engine.resumeVideoFarm());
+  handle(IPC.ytVideoStop, () => engine.stopVideoFarm());
+  handle(IPC.ytVideoSkip, () => engine.skipVideoFarm());
+  handle(IPC.ytVideoSpeed, (speed: number) => engine.setVideoFarmSpeed(speed));
 
   handle(IPC.cxLogin, (phone: string, password: string) => engine.loginChaoxing(phone, password));
   handle(IPC.cxLoginWindow, async () => {

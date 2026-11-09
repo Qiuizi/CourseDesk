@@ -31,6 +31,25 @@ export function countdown(deadlineAt?: number, now = Date.now()): string {
   return `${Math.floor(s / 60)}′${String(s % 60).padStart(2, '0')}″`;
 }
 
+/** 秒 → 1:02:03 / 12:03 */
+export function durationText(sec?: number): string {
+  if (sec === undefined || !Number.isFinite(sec) || sec < 0) return '—';
+  const total = Math.round(sec);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+/** 剩余秒 → "约 12 分钟" */
+export function etaText(sec?: number): string {
+  if (sec === undefined || sec <= 0) return '—';
+  if (sec < 60) return `${Math.ceil(sec)} 秒`;
+  if (sec < 3600) return `约 ${Math.ceil(sec / 60)} 分钟`;
+  return `约 ${(sec / 3600).toFixed(1)} 小时`;
+}
+
 export const PROBLEM_TYPE: Record<number, string> = {
   1: '单选',
   2: '多选',

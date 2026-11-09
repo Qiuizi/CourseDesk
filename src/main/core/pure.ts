@@ -34,58 +34,6 @@ export function deepMerge<T>(base: T, patch: unknown): T {
   return out as T;
 }
 
-/**
- * 构造 video-log 心跳事件。
- * 字段取自真实播放器上报形状（FkRain/new.ps1）：i=20、p=web、lob=ykt、source=ks ……
- * ts 递增、cp 递增，最后补一条到片尾。
- */
-export function buildHeartbeatEvents(
-  videos: { videoId: string; duration: number; presentationId: string; slideIndex: number }[],
-  userId: string,
-  intervalSec = 15,
-): Record<string, unknown>[] {
-  const out: Record<string, unknown>[] = [];
-  let sq = 0;
-  for (const video of videos) {
-    const duration = video.duration > 0 ? video.duration : 600;
-    const start = Date.now();
-    const push = (offset: number, type: string) => {
-      out.push({
-        ts: start + offset * 1000,
-        i: 20,
-        et: type,
-        p: 'web',
-        t: 'ykt_playback',
-        u: userId,
-        c: '',
-        classroomid: '',
-        lob: 'ykt',
-        v: video.videoId,
-        f: 0,
-        fp: '',
-        tp: 'ykt',
-        d: Math.min(offset, duration),
-        pg: `${video.videoId}_${start}`,
-        n: sq++,
-        lesson_id: '',
-        source: 'ks',
-        sp: 1,
-        sq,
-        cp: Math.min(offset, duration),
-      });
-    };
-    push(0, 'loadstart');
-    push(0.6, 'loadeddata');
-    push(0.9, 'play');
-    push(0.92, 'playing');
-    push(1.1, 'waiting');
-    push(1.4, 'playing');
-    for (let at = intervalSec; at < duration; at += intervalSec) push(at, 'heartbeat');
-    push(duration, 'heartbeat');
-  }
-  return out;
-}
-
 /** 从模型输出里抠 JSON 数组；容忍 ```json 包裹与前后废话 */
 export function parseAnswerArray(text: string): string[] {
   const cleaned = text.replace(/```(?:json)?/gi, '').trim();

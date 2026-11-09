@@ -153,6 +153,16 @@ export interface HomeworkItem {
 export type AnswerPolicy = 'off' | 'confirm' | 'auto';
 export type CheckinMode = 'page' | 'api' | 'both';
 
+/** 刷课（视频进度）节奏设置 */
+export interface VideoSettings {
+  /** 倍速：上报速度按这个倍数折算成媒体时间 */
+  speed: number;
+  /** 每批上报间隔（秒，真实时间） */
+  tickSec: number;
+  /** 收到课件/进入课堂时自动加入队列并开刷 */
+  autoStart: boolean;
+}
+
 export interface YuketangSettings {
   /** 学校域名，如 www.yuketang.cn / pro.yuketang.cn / 学校自建子域 */
   host: string;
@@ -164,10 +174,10 @@ export interface YuketangSettings {
   checkinSource: number;
   checkinMode: CheckinMode;
   answerPolicy: AnswerPolicy;
-  /** confirm 模式下，自动填充后等待确认的秒数 */
-  confirmTimeoutSec: number;
   /** 视频进度心跳上报（本地测试用，默认关） */
   videoHeartbeat: boolean;
+  /** 刷课节奏 */
+  video: VideoSettings;
   homeworkWatch: boolean;
 }
 
@@ -288,6 +298,43 @@ export interface AuthState {
   error?: string;
 }
 
+export type VideoFarmStatus = 'idle' | 'collecting' | 'running' | 'paused' | 'done' | 'error';
+
+export interface VideoFarmItem {
+  presentationId: string;
+  videoId: string;
+  name: string;
+  /** 媒体时长（秒） */
+  duration: number;
+  /** 已上报到的媒体位置（秒） */
+  position: number;
+  /** 0-100 */
+  percent: number;
+  seq: number;
+  done: boolean;
+  skipped: boolean;
+  attempts: number;
+  sentTicks: number;
+  lastError?: string;
+  updatedAt: number;
+}
+
+/** 刷课队列的运行时状态 */
+export interface VideoFarmState {
+  status: VideoFarmStatus;
+  /** 本次运行使用的倍速（设置里改了也会同步） */
+  speed: number;
+  tickSec: number;
+  items: VideoFarmItem[];
+  currentIndex: number;
+  startedAt?: number;
+  updatedAt?: number;
+  lastError?: string;
+  lastReply?: string;
+  /** 这一轮是否由自动开课/课件事件触发 */
+  autoStarted: boolean;
+}
+
 export interface YuketangState {
   auth: AuthState;
   courses: Course[];
@@ -295,8 +342,8 @@ export interface YuketangState {
   lesson: LessonSession | null;
   homework: HomeworkItem[];
   monitor: MonitorState;
-  /** 已上报视频进度的 presentationId → 条数 */
-  videoReported: Record<string, number>;
+  /** 刷课队列 */
+  videoFarm: VideoFarmState;
 }
 
 export interface ChaoxingState {
